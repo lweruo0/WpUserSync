@@ -1,0 +1,15 @@
+{
+  "external_id": "wp:123",
+  "email": "max.mustermann@example.org",
+  "first_name": "Max",
+  "last_name": "Mustermann",
+  "username": "max.mustermann",
+  "active": true,
+  "roles": [
+    "member"
+  ],
+  "profile": {
+    "PHONE": "+49 123 456789",
+    "CITY": "Ehingen"
+  }
+}

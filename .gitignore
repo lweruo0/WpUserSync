@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+XML_PMA/
+database.sql
+*.py[codz]
+*$py.class
+
+*.SDF
+*.txd
+*.txv
+*.pdf
+*.xml
+*.jpg
+infos.dat
+# C extensions
+*.so
