@@ -125,7 +125,7 @@ def send_request(url: str, token: str, payload: dict[str, Any], timeout: int, in
         data=body,
         method="POST",
         headers={
-            "Authorization": f"Bearer {token}",
+            "X-Api-Token": token,
             "Content-Type": "application/json",
             "Accept": "application/json",
             "User-Agent": "WpUserSync-TestClient/1.0",
