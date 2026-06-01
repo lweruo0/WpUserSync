@@ -37,17 +37,11 @@ final class UserProvisioningService
         $user = new User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
-        $user->setValue('FIRST_NAME', $payload['first_name']??'');
-        $user->setValue('LAST_NAME', $payload['last_name']??'');
-        $user->setValue('EMAIL', $payload['email']??'');
-        $user->setValue('BIRTHDAY', $payload['birthday']??'');
-
-        $user->setValue('usr_login_name', $payload['username']??'');
-        $user->setValue('DEBTOR', $payload['kontoinhaber'] ?? '');
-        $user->setValue('DEBTOR_STREET', $payload['kontoinhaber_street'] ?? '');
-        $user->setValue('DEBTOR_POSTCODE', $payload['kontoinhaber_postcode'] ?? '');
-        $user->setValue('DEBTOR_CITY', $payload['kontoinhaber_city'] ?? '');
-
+        foreach ($payload as $fieldName => $value) {
+            if ($this->profileFields->hasProperty($fieldName)) {
+                $user->setValue($fieldName, $value);
+            }
+        }
 
         $user->saveChangesWithoutRights();
         $user->save();

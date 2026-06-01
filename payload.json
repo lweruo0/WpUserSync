@@ -1,16 +1,43 @@
+usr_login_name
+usr_password
+usr_uuid
+
+
 {
-  "external_id": "wp:123",
-  "email": "max.mustermann@example.org",
-  "first_name": "AAmax",
-  "last_name": "AAmann",
-  "birthday": "1990-01-01",
-  "username": "AAmann",
+
+
   "active": true,
   "roles": [
-    "member"
+    "member",
+    "Aktiv",
+    "Boot",
+    "Mitgliedsantrag" 
   ],
   "profile": {
-    "PHONE": "+49 123 456789",
-    "CITY": "Ehingen"
+    "EMAIL": "max.mustermann@example.org",
+    "FIRST_NAME": "AA",
+    "LAST_NAME": "AAmann",
+    "BIRTHDAY": "1990-01-01",
+    "HOMEPAGE_USERNAME": "AAmustermann",
+    "HOMEPAGE_PASSWORD": "password",
+    "STEMPEL": '',
+    "MEMBERNUMBER1": '',
+    "IBAN": "DE89370400440532013000",
+    "BIC": "COBADEFFXXX",
+    "BANK": "Commerzbank",
+    "FISHING_EXAM_PREP_COURSE": true,
+    "FISHING_LICENSE_YEAR": 2024,
+    "FISHING_EXAM_LOCATION": "Ehingen",
+    "FISHING_LICENSE_LOCATION":"dd",
+    "MANDATEID1": "123456789",
+    "EMAIL": "",
+    "FISHING_EXAM_DATE": "2024-06-01",
+    "MANDATEDATE1": "2024-06-01",
+    "PHONE": "+49123456789",
+    "MOBILE": "+49123456789",
+    "BERUF": "Softwareentwickler",
+    "GENDER": "male",
   }
+
+  
 }
