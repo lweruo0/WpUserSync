@@ -22,7 +22,6 @@ try {
     $clientIp = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
     ApiAuth::assertAllowedIp((string) ($config['allowed_ips'] ?? ''), $clientIp);
     ApiAuth::assertToken(
-        (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''),
         (string) ($config['api_token_hash'] ?? '')
     );
 
