@@ -1,0 +1,73 @@
+{
+  "name": "PLG_WP_USER_SYNC_PLUGIN_NAME",
+  "description": "PLG_WP_USER_SYNC_PLUGIN_DESCRIPTION",
+  "version": "1.0.0",
+  "author": "M365 Copilot",
+  "url": "https://example.invalid/WpUserSync",
+  "icon": "bi-person-plus-fill",
+  "mainFile": "index.php",
+  "autoload": {
+    "psr-4": {
+      "WpUserSync\\classes\\": "classes/"
+    }
+  },
+  "dependencies": [
+    "Admidio\\Infrastructure\\Plugins\\PluginAbstract"
+  ],
+  "defaultConfig": {
+    "wp_user_sync_enabled": {
+      "name": "PLG_WP_USER_SYNC_ENABLED",
+      "description": "PLG_WP_USER_SYNC_ENABLED_DESC",
+      "type": "boolean",
+      "value": true
+    },
+    "wp_user_sync_require_https": {
+      "name": "PLG_WP_USER_SYNC_REQUIRE_HTTPS",
+      "description": "PLG_WP_USER_SYNC_REQUIRE_HTTPS_DESC",
+      "type": "boolean",
+      "value": true
+    },
+    "wp_user_sync_update_existing_by_email": {
+      "name": "PLG_WP_USER_SYNC_UPDATE_EXISTING_BY_EMAIL",
+      "description": "PLG_WP_USER_SYNC_UPDATE_EXISTING_BY_EMAIL_DESC",
+      "type": "boolean",
+      "value": true
+    },
+    "wp_user_sync_assign_default_roles": {
+      "name": "PLG_WP_USER_SYNC_ASSIGN_DEFAULT_ROLES",
+      "description": "PLG_WP_USER_SYNC_ASSIGN_DEFAULT_ROLES_DESC",
+      "type": "boolean",
+      "value": true
+    },
+    "wp_user_sync_external_id_field": {
+      "name": "PLG_WP_USER_SYNC_EXTERNAL_ID_FIELD",
+      "description": "PLG_WP_USER_SYNC_EXTERNAL_ID_FIELD_DESC",
+      "type": "string",
+      "value": "WP_USER_ID"
+    },
+    "wp_user_sync_default_role": {
+      "name": "PLG_WP_USER_SYNC_DEFAULT_ROLE",
+      "description": "PLG_WP_USER_SYNC_DEFAULT_ROLE_DESC",
+      "type": "string",
+      "value": ""
+    },
+    "wp_user_sync_role_map_json": {
+      "name": "PLG_WP_USER_SYNC_ROLE_MAP_JSON",
+      "description": "PLG_WP_USER_SYNC_ROLE_MAP_JSON_DESC",
+      "type": "string",
+      "value": "{\"subscriber\": \"Interessenten\", \"member\": \"Mitglieder\"}"
+    },
+    "wp_user_sync_allowed_ips": {
+      "name": "PLG_WP_USER_SYNC_ALLOWED_IPS",
+      "description": "PLG_WP_USER_SYNC_ALLOWED_IPS_DESC",
+      "type": "string",
+      "value": ""
+    },
+    "wp_user_sync_api_token_hash": {
+      "name": "PLG_WP_USER_SYNC_API_TOKEN_HASH",
+      "description": "PLG_WP_USER_SYNC_API_TOKEN_HASH_DESC",
+      "type": "string",
+      "value": ""
+    }
+  }
+}

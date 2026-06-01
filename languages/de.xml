@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+    <string name="PLG_WP_USER_SYNC_PLUGIN_NAME">WordPress Benutzer-Synchronisation</string>
+    <string name="PLG_WP_USER_SYNC_PLUGIN_DESCRIPTION">Legt Benutzer per JSON-API aus WordPress in Admidio an oder aktualisiert sie.</string>
+    <string name="PLG_WP_USER_SYNC_TOKEN_NOT_CONFIGURED">Hinweis: Hinterlege einen SHA-256-Hash des API-Tokens in den Plugin-Einstellungen, bevor du den Endpunkt produktiv verwendest.</string>
+
+    <string name="PLG_WP_USER_SYNC_ENABLED">Plugin aktiv</string>
+    <string name="PLG_WP_USER_SYNC_ENABLED_DESC">Aktiviert oder deaktiviert den API-Endpunkt.</string>
+    <string name="PLG_WP_USER_SYNC_REQUIRE_HTTPS">HTTPS erzwingen</string>
+    <string name="PLG_WP_USER_SYNC_REQUIRE_HTTPS_DESC">Lehnt Requests ohne HTTPS ab.</string>
+    <string name="PLG_WP_USER_SYNC_UPDATE_EXISTING_BY_EMAIL">Bestehende Benutzer per E-Mail aktualisieren</string>
+    <string name="PLG_WP_USER_SYNC_UPDATE_EXISTING_BY_EMAIL_DESC">Wenn kein externer Schlüssel gefunden wird, wird optional anhand der E-Mail-Adresse aktualisiert.</string>
+    <string name="PLG_WP_USER_SYNC_ASSIGN_DEFAULT_ROLES">Admidio-Standardrollen bei Neuanlage zuweisen</string>
+    <string name="PLG_WP_USER_SYNC_ASSIGN_DEFAULT_ROLES_DESC">Ruft nach dem Anlegen die Standardrollen-Zuweisung von Admidio auf.</string>
+    <string name="PLG_WP_USER_SYNC_EXTERNAL_ID_FIELD">Internes Profilfeld für externe ID</string>
+    <string name="PLG_WP_USER_SYNC_EXTERNAL_ID_FIELD_DESC">Interner Name des Admidio-Profilfelds, z. B. WP_USER_ID.</string>
+    <string name="PLG_WP_USER_SYNC_DEFAULT_ROLE">Fallback-Rolle</string>
+    <string name="PLG_WP_USER_SYNC_DEFAULT_ROLE_DESC">Wird verwendet, wenn keine WordPress-Rolle über das Mapping aufgelöst werden kann.</string>
+    <string name="PLG_WP_USER_SYNC_ROLE_MAP_JSON">WordPress-&gt;Admidio Rollen-Mapping (JSON)</string>
+    <string name="PLG_WP_USER_SYNC_ROLE_MAP_JSON_DESC">Beispiel: {&quot;subscriber&quot;: &quot;Interessenten&quot;, &quot;member&quot;: &quot;Mitglieder&quot;}.</string>
+    <string name="PLG_WP_USER_SYNC_ALLOWED_IPS">Erlaubte Client-IPs</string>
+    <string name="PLG_WP_USER_SYNC_ALLOWED_IPS_DESC">Kommagetrennte Liste erlaubter IP-Adressen. Leer = keine Einschränkung.</string>
+    <string name="PLG_WP_USER_SYNC_API_TOKEN_HASH">SHA-256 Hash des API-Tokens</string>
+    <string name="PLG_WP_USER_SYNC_API_TOKEN_HASH_DESC">Hier den SHA-256-Hash des geheimen Tokens hinterlegen, nicht den Klartext.</string>
+</resources>
