@@ -12,6 +12,23 @@ use WpUserSync\classes\Service\RequestValidator;
 use WpUserSync\classes\Service\UserProvisioningService;
 
 try {
+    header('Content-Type: text/plain; charset=utf-8');
+
+    echo "HTTP_AUTHORIZATION:\n";
+    var_dump($_SERVER['HTTP_AUTHORIZATION'] ?? null);
+
+    echo "\nREDIRECT_HTTP_AUTHORIZATION:\n";
+    var_dump($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null);
+
+    echo "\ngetallheaders():\n";
+    if (function_exists('getallheaders')) {
+        var_dump(getallheaders());
+    } else {
+        echo "getallheaders() not available\n";
+    }
+
+    exit;
+
     $config = Config::load(dirname(__DIR__));
 
     if (empty($config['enabled'])) {
