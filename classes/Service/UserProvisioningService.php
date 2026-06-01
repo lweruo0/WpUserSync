@@ -3,6 +3,16 @@ declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 
+use Admidio\Infrastructure\Exception;
+use Admidio\Categories\Entity\Category;
+use Admidio\Roles\Entity\Role;
+use Admidio\Roles\Entity\RolesRights;
+use Admidio\Users\Entity\UserImport;
+use Admidio\Infrastructure\Entity\Entity;
+use Admidio\Users\Lists\UserList;
+use Admidio\Users\Entity\User;
+use Admidio\ProfileFields\ValueObjects\ProfileFields;
+
 use PDO;
 
 final class UserProvisioningService
@@ -22,8 +32,11 @@ final class UserProvisioningService
 
     public function upsert(array $payload): array
     {
+        
+    
+    
         $userId = $this->findUserId($payload);
-        $user = new \User($this->db, $this->profileFields, $userId ?? 0);
+        $user = new User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
         $user->setValue('FIRST_NAME', $payload['first_name']);
@@ -75,39 +88,47 @@ final class UserProvisioningService
 
     private function findUserId(array $payload): ?int
     {
-        $externalField = trim((string) ($this->config['external_id_field'] ?? ''));
-        if ($externalField !== '' && $payload['external_id'] !== '') {
-            $userId = $this->findUserIdByExternalField($externalField, $payload['external_id']);
-            if ($userId !== null) {
-                return $userId;
-            }
-        }
-
-        if (!empty($this->config['update_existing_by_email'])) {
-            $user = new \User($this->db, $this->profileFields);
-            if ($user->readDataByColumns(array('usr_email' => $payload['email']))) {
-                return (int) $user->getValue('usr_id');
-            }
+        $vorname = trim((string) ($payload['first_name'] ?? ''));
+        $nachname = trim((string) ($payload['last_name'] ?? ''));
+        $email = trim((string) ($payload['email'] ?? ''));
+    
+        if ($vorname !== '' && $nachname !== '' && $email !== '') {
+            return $this->findUserIdbyFirstnameLastnameBirthday($vorname, $nachname, $email);
         }
 
         return null;
     }
 
-    private function findUserIdByExternalField(string $fieldNameIntern, string $externalId): ?int
+    public function findUserIdbyFirstnameLastnameBirthday(string $firstName, string $lastName, string $birthday): ?int
     {
-        if (!method_exists($this->profileFields, 'getProperty')) {
-            return null;
-        }
+        // search for existing user with same name and read user data
+        $sql = 'SELECT MAX(usr_id) AS usr_id
+                  FROM '.TBL_USERS.'
+            INNER JOIN '.TBL_USER_DATA.' AS last_name
+                    ON last_name.usd_usr_id = usr_id
+                   AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
+                   AND last_name.usd_value  = ? -- $user->getValue(\'LAST_NAME\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS birthday
+                    ON birthday.usd_usr_id = usr_id
+                   AND birthday.usd_usf_id = ? -- $gProfileFields->getProperty(\'BIRTHDAY\', \'usf_id\')
+                   AND birthday.usd_value  = ? -- $user->getValue(\'BIRTHDAY\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS first_name
+                    ON first_name.usd_usr_id = usr_id
+                   AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
+                   AND first_name.usd_value  = ? -- $user->getValue(\'FIRST_NAME\', \'database\')
+                 WHERE usr_valid = true';
+        $queryParams = array(
+            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
+            $lastName,
+            $this->profileFields->getProperty('BIRTHDAY', 'usf_id'),
+            $birthday,
+            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
+            $firstName
+        );
+        $pdoStatement = $this->db->queryPrepared($sql, $queryParams);
+        $maxUserId = (int) $pdoStatement->fetchColumn();
 
-        $fieldId = (int) $this->profileFields->getProperty($fieldNameIntern, 'usf_id');
-        if ($fieldId <= 0) {
-            return null;
-        }
-
-        $sql = 'SELECT usd_usr_id FROM ' . TBL_USER_DATA . ' WHERE usd_usf_id = ? AND usd_value = ?';
-        $statement = $this->db->queryPrepared($sql, array($fieldId, $externalId));
-        $row = $statement->fetch(PDO::FETCH_ASSOC);
-
-        return $row ? (int) $row['usd_usr_id'] : null;
+        return $maxUserId > 0 ? $maxUserId : null;
     }
+
 }
