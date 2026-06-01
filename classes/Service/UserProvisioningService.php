@@ -48,6 +48,8 @@ final class UserProvisioningService
         $user->setValue('DEBTOR_POSTCODE', $payload['kontoinhaber_postcode'] ?? '');
         $user->setValue('DEBTOR_CITY', $payload['kontoinhaber_city'] ?? '');
 
+
+        $user->saveChangesWithoutRights();
         $user->save();
 
         if ($isNew && !empty($this->config['assign_default_roles'])) {
