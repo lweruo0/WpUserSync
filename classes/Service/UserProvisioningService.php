@@ -1,22 +1,18 @@
 <?php
-
 declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 
-use Admidio\Infrastructure\Database;
-use Admidio\ProfileFields\Service\ProfileFields;
-use Admidio\Users\Entity\User;
 use PDO;
 
 final class UserProvisioningService
 {
-    private Database $db;
-    private ProfileFields $profileFields;
+    private $db;
+    private $profileFields;
     private RoleMapper $roleMapper;
     private array $config;
 
-    public function __construct(Database $db, ProfileFields $profileFields, array $config)
+    public function __construct($db, $profileFields, array $config)
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
@@ -27,7 +23,7 @@ final class UserProvisioningService
     public function upsert(array $payload): array
     {
         $userId = $this->findUserId($payload);
-        $user = new User($this->db, $this->profileFields, $userId ?? 0);
+        $user = new \User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
         $user->setValue('FIRST_NAME', $payload['first_name']);
@@ -38,7 +34,7 @@ final class UserProvisioningService
             $user->setValue('usr_login_name', $payload['username']);
         }
 
-        $externalField = trim((string) ($this->config['wp_user_sync_external_id_field'] ?? ''));
+        $externalField = trim((string) ($this->config['external_id_field'] ?? ''));
         if ($externalField !== '' && $payload['external_id'] !== '') {
             $user->setValue($externalField, $payload['external_id']);
         }
@@ -54,14 +50,14 @@ final class UserProvisioningService
 
         $user->save();
 
-        if ($isNew && !empty($this->config['wp_user_sync_assign_default_roles'])) {
+        if ($isNew && !empty($this->config['assign_default_roles'])) {
             $user->assignDefaultRoles();
         }
 
         $roleIds = $this->roleMapper->resolveRoleIds(
             $payload['roles'],
-            (string) ($this->config['wp_user_sync_role_map_json'] ?? ''),
-            (string) ($this->config['wp_user_sync_default_role'] ?? '')
+            (string) ($this->config['role_map_json'] ?? ''),
+            (string) ($this->config['default_role'] ?? '')
         );
 
         foreach ($roleIds as $roleId) {
@@ -79,7 +75,7 @@ final class UserProvisioningService
 
     private function findUserId(array $payload): ?int
     {
-        $externalField = trim((string) ($this->config['wp_user_sync_external_id_field'] ?? ''));
+        $externalField = trim((string) ($this->config['external_id_field'] ?? ''));
         if ($externalField !== '' && $payload['external_id'] !== '') {
             $userId = $this->findUserIdByExternalField($externalField, $payload['external_id']);
             if ($userId !== null) {
@@ -87,8 +83,8 @@ final class UserProvisioningService
             }
         }
 
-        if (!empty($this->config['wp_user_sync_update_existing_by_email'])) {
-            $user = new User($this->db, $this->profileFields);
+        if (!empty($this->config['update_existing_by_email'])) {
+            $user = new \User($this->db, $this->profileFields);
             if ($user->readDataByColumns(array('usr_email' => $payload['email']))) {
                 return (int) $user->getValue('usr_id');
             }
@@ -99,6 +95,10 @@ final class UserProvisioningService
 
     private function findUserIdByExternalField(string $fieldNameIntern, string $externalId): ?int
     {
+        if (!method_exists($this->profileFields, 'getProperty')) {
+            return null;
+        }
+
         $fieldId = (int) $this->profileFields->getProperty($fieldNameIntern, 'usf_id');
         if ($fieldId <= 0) {
             return null;

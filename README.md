@@ -1,21 +1,34 @@
-# WpUserSync
+# WpUserSync (Admidio 5.0 kompatibel)
 
-Admidio-5-Plugin-Grundgerüst für eine JSON-API, über die WordPress Benutzer in Admidio anlegt oder aktualisiert.
+Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** ohne Abhängigkeit vom neuen Plugin-Manager-Stack. Der Plugin-Manager ist als eigenes Feature mit **Milestone v5.1** angelegt; gleichzeitig existieren in Admidio-Quellen bereits vorbereitende Komponenten wie `PluginAbstract.php`. Deshalb ist für produktive **5.0.x**-Installationen der klassische Plugin-Stil die sicherere Wahl.
 
-## Funktionsumfang
+## Enthalten
 
-- JSON-Endpoint `POST /api/users.php`
-- Bearer-Token-Authentifizierung mit SHA-256-Hash in der Plugin-Konfiguration
-- optionale IP-Allowlist
-- HTTPS-Pflicht
-- Upsert per externem Profilfeld (z. B. `WP_USER_ID`) mit Fallback auf E-Mail
-- Mapping von WordPress-Rollen auf Admidio-Rollen
+- `index.php` – einfache Infoseite
+- `api/users.php` – JSON-Endpoint für POST-Requests
+- `bootstrap-admidio.php` – robuster Bootstrap für klassische Admidio-Strukturen
+- `bootstrap-plugin.php` – lokaler PSR-4-Autoloader für dieses Plugin
+- `config_sample.php` – Beispielkonfiguration, bitte in `config.php` kopieren
 
-## Erwarteter Request
+## Installation
+
+1. Ordner `WpUserSync` nach `adm_plugins/` kopieren.
+2. `config_sample.php` nach `config.php` kopieren.
+3. In Admidio ein Profilfeld `WP_USER_ID` (interner Name) anlegen.
+4. SHA-256-Hash des geheimen Tokens in `config.php` eintragen.
+
+## Beispiel: Token-Hash
+
+```php
+<?php
+echo hash('sha256', 'mein-langes-geheimes-token') . PHP_EOL;
+```
+
+## Testrequest
 
 ```http
-POST /plugins/WpUserSync/api/users.php HTTP/1.1
-Authorization: Bearer <dein-token>
+POST /adm_plugins/WpUserSync/api/users.php
+Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
@@ -33,17 +46,3 @@ Content-Type: application/json
   }
 }
 ```
-
-## Token-Hash erzeugen
-
-```php
-<?php
-$token = 'hier-ein-lang-zufaelliges-token';
-echo hash('sha256', $token) . PHP_EOL;
-```
-
-## Hinweise
-
-- Vor der Nutzung in Admidio ein Profilfeld mit internem Namen `WP_USER_ID` anlegen.
-- Die Bootstrap-Pfade `../../system/common.php` bzw. `../../../system/common.php` basieren auf dem Admidio-5-Beispiel-Plugin. Falls deine Installation eine abweichende Struktur hat, die Pfade entsprechend anpassen.
-- Rollen werden aktuell additiv gesetzt; ein Entzug nicht mehr gemappter Rollen ist in diesem Grundgerüst noch nicht implementiert.

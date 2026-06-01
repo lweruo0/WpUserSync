@@ -1,17 +1,15 @@
 <?php
-
 declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 
-use Admidio\Infrastructure\Database;
 use PDO;
 
 final class RoleMapper
 {
-    private Database $db;
+    private $db;
 
-    public function __construct(Database $db)
+    public function __construct($db)
     {
         $this->db = $db;
     }

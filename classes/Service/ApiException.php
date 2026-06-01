@@ -1,12 +1,11 @@
 <?php
-
 declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 
 use RuntimeException;
 
-class ApiException extends RuntimeException
+final class ApiException extends RuntimeException
 {
     private int $statusCode;
     private string $errorCode;

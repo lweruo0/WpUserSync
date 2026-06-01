@@ -5,12 +5,12 @@ spl_autoload_register(static function (string $class): void {
     $prefix = 'WpUserSync\\classes\\';
     $baseDir = __DIR__ . '/classes/';
 
-    $len = strlen($prefix);
-    if (strncmp($prefix, $class, $len) !== 0) {
+    $length = strlen($prefix);
+    if (strncmp($prefix, $class, $length) !== 0) {
         return;
     }
 
-    $relativeClass = substr($class, $len);
+    $relativeClass = substr($class, $length);
     $file = $baseDir . str_replace('\\', '/', $relativeClass) . '.php';
 
     if (is_file($file)) {
