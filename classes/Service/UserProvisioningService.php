@@ -32,34 +32,21 @@ final class UserProvisioningService
 
     public function upsert(array $payload): array
     {
-        
-    
-    
+          
         $userId = $this->findUserId($payload);
         $user = new User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
-        $user->setValue('FIRST_NAME', $payload['first_name']);
-        $user->setValue('LAST_NAME', $payload['last_name']);
-        $user->setValue('EMAIL', $payload['email']);
+        $user->setValue('FIRST_NAME', $payload['first_name']??'');
+        $user->setValue('LAST_NAME', $payload['last_name']??'');
+        $user->setValue('EMAIL', $payload['email']??'');
+        $user->setValue('BIRTHDAY', $payload['birthday']??'');
 
-        if ($payload['username'] !== '') {
-            $user->setValue('usr_login_name', $payload['username']);
-        }
-
-        $externalField = trim((string) ($this->config['external_id_field'] ?? ''));
-        if ($externalField !== '' && $payload['external_id'] !== '') {
-            $user->setValue($externalField, $payload['external_id']);
-        }
-
-        foreach ($payload['profile'] as $fieldName => $value) {
-            if (!is_string($fieldName) || trim($fieldName) === '') {
-                continue;
-            }
-            if (is_scalar($value) || $value === null) {
-                $user->setValue(trim($fieldName), $value === null ? '' : (string) $value);
-            }
-        }
+        $user->setValue('usr_login_name', $payload['username']??'');
+        $user->setValue('DEBTOR', $payload['kontoinhaber'] ?? '');
+        $user->setValue('DEBTOR_STREET', $payload['kontoinhaber_street'] ?? '');
+        $user->setValue('DEBTOR_POSTCODE', $payload['kontoinhaber_postcode'] ?? '');
+        $user->setValue('DEBTOR_CITY', $payload['kontoinhaber_city'] ?? '');
 
         $user->save();
 
@@ -80,7 +67,6 @@ final class UserProvisioningService
         return array(
             'status' => $isNew ? 'created' : 'updated',
             'user_id' => (int) $user->getValue('usr_id'),
-            'external_id' => $payload['external_id'],
             'email' => $payload['email'],
             'roles_applied' => $roleIds,
         );
@@ -90,10 +76,10 @@ final class UserProvisioningService
     {
         $vorname = trim((string) ($payload['first_name'] ?? ''));
         $nachname = trim((string) ($payload['last_name'] ?? ''));
-        $email = trim((string) ($payload['email'] ?? ''));
+        $birthday = trim((string) ($payload['birthday'] ?? ''));
     
-        if ($vorname !== '' && $nachname !== '' && $email !== '') {
-            return $this->findUserIdbyFirstnameLastnameBirthday($vorname, $nachname, $email);
+        if ($vorname !== '' && $nachname !== '' && $birthday !== '') {
+            return $this->findUserIdbyFirstnameLastnameBirthday($vorname, $nachname, $birthday);
         }
 
         return null;

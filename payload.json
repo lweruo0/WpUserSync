@@ -1,9 +1,10 @@
 {
   "external_id": "wp:123",
   "email": "max.mustermann@example.org",
-  "first_name": "Max",
-  "last_name": "Mustermann",
-  "username": "max.mustermann",
+  "first_name": "AAmax",
+  "last_name": "AAmann",
+  "birthday": "1990-01-01",
+  "username": "AAmann",
   "active": true,
   "roles": [
     "member"
