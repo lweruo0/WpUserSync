@@ -29,7 +29,7 @@ final class UserProvisioningService
         $this->profileFields = $profileFields;
 
         foreach ($this->profileFields->getProfileFields() as $field) {
-            $this->existingFieldNames[] = $field['usf_name_intern'];
+            $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
 
         $this->roleMapper = new RoleMapper($db);
