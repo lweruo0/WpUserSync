@@ -57,7 +57,7 @@ final class RequestValidator
             $errors['GENDER'] = 'invalid';
         }
 
-        $errors['dddd'] = print_r($arrOptions, true);
+        //$errors['dddd'] = print_r($arrOptions, true);
 
         if ($errors !== array()) {
             throw new ApiException('Validation failed.', 'validation_failed', 422, $errors);
