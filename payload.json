@@ -1,10 +1,16 @@
 {
   "active": true,
-  "roles": [
-    "member",
-    "Aktiv",
-    "Boot"
-  ],
+  "roles": {
+    "member" : {
+      "start_date": "2024-01-01"
+    },
+    "Aktiv" : {
+      "start_date": "2024-01-01"
+    },
+    "Boot" : {
+      "start_date": "2024-01-01"
+    }
+  },
   "profile": {
     "EMAIL": "max.mustermann@example.org",
     "FIRST_NAME": "AA",

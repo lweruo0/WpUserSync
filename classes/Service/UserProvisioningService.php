@@ -53,19 +53,15 @@ final class UserProvisioningService
 
         $user->saveChangesWithoutRights();
         $user->save();
+        $usr_id = (int) $user->getValue('usr_id');
 
         if ($isNew && !empty($this->config['assign_default_roles'])) {
             $user->assignDefaultRoles();
         }
 
-        $roleIds = $this->roleMapper->resolveRoleIds(
-            $payload['roles'],
-            (string) ($this->config['role_map_json'] ?? ''),
-            (string) ($this->config['default_role'] ?? '')
-        );
-
-        foreach ($roleIds as $roleId) {
-            $user->setRoleMembership($roleId);
+        $wpRoles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
+        foreach ($roles as $role -> $roledata) {
+            $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
         }
 
         return array(
@@ -75,6 +71,35 @@ final class UserProvisioningService
             'roles_applied' => $roleIds,
         );
     }
+
+    public function assignRoleToUserByName(int $userId, string $roleName, string $startDate = '', string $endDate = ''): bool
+    {
+        global $gDb, $gCurrentOrgId;
+
+        $roleName = trim($roleName);
+        if ($userId <= 0 || $roleName === '') {
+            echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
+            return false;
+        }
+
+        $role = new Role($gDb);
+        $role->readDataByColumns(array(
+            'rol_name' => $roleName,
+            'cat_org_id' => $gCurrentOrgId
+        ));
+
+        if ($role->isNewRecord()) {
+            echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
+            return false;
+        }
+
+        $startDate = $this->normalizeDateToYmd($startDate) ?: DATE_NOW;
+        $endDate = $this->normalizeDateToYmd($endDate) ?: DATE_MAX;
+
+        $role->setMembership($userId, $startDate, $endDate, false, true);
+        return true;
+    }
+
 
     private function findUserId(array $data): ?int
     {
