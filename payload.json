@@ -7,7 +7,7 @@
     "Aktiv" : {
       "start_date": "2024-01-01"
     },
-    "Boot" : {
+    "Bootsbeitrag" : {
       "start_date": "2024-01-01"
     }
   },
@@ -15,6 +15,9 @@
     "EMAIL": "max.mustermann@example.org",
     "FIRST_NAME": "AA",
     "LAST_NAME": "AAmann",
+    "STREET": "Musterstraße 1",
+    "POSTAL_CODE": "12345",
+    "CITY": "Musterstadt",
     "BIRTHDAY": "1990-01-01",
     "HOMEPAGE_USERNAME": "AAmustermann",
     "HOMEPAGE_PASSWORD": "password",
