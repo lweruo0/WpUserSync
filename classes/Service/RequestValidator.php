@@ -36,6 +36,8 @@ final class RequestValidator
         }
 
 
+
+
         $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
         foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY') as $requiredField) {
@@ -47,6 +49,15 @@ final class RequestValidator
         if (!empty($profileData['EMAIL']) && filter_var((string) $profileData['EMAIL'], FILTER_VALIDATE_EMAIL) === false) {
             $errors['EMAIL'] = 'invalid';
         }
+
+        $gender = is_array($profileData['GENDER'] ?? null) ? $profileData['GENDER'] : 'male';
+        global $gProfileFields;
+        $arrOptions = $gProfileFields->getProperty('GENDER', 'ufo_usf_options', 'text');
+        if (!is_array($arrOptions)) {
+            $errors['GENDER'] = 'invalid';
+        }
+
+        $errors['dddd'] = print_r($arrOptions, true);
 
         if ($errors !== array()) {
             throw new ApiException('Validation failed.', 'validation_failed', 422, $errors);
