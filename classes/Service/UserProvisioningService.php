@@ -85,9 +85,9 @@ final class UserProvisioningService
         }
 
         try {
-            $date = new DateTime($dateValue);
+            $date = new \DateTime($dateValue);
             return $date->format('Y-m-d');
-        } catch (Throwable) {
+        } catch (\Throwable $e) {
             return '';
         }
     }
