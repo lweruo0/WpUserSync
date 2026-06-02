@@ -21,11 +21,17 @@ final class UserProvisioningService
     private $profileFields;
     private RoleMapper $roleMapper;
     private array $config;
+    private array $existingFieldNames = array();
 
     public function __construct($db, $profileFields, array $config)
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
+
+        foreach ($this->profileFields->getProfileFields() as $field) {
+            $this->existingFieldNames[] = $field['usf_name_intern'];
+        }
+
         $this->roleMapper = new RoleMapper($db);
         $this->config = $config;
     }
@@ -38,8 +44,9 @@ final class UserProvisioningService
         $user = new User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
+
         foreach ($profileData as $fieldName => $value) {
-            if ($this->profileFields->hasProperty($fieldName)) {
+            if (in_array($fieldName, $this->existingFieldNames, true)) {
                 $user->setValue($fieldName, $value);
             }
         }
