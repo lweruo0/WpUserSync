@@ -14,7 +14,13 @@ final class Config
             'assign_default_roles' => true,
             'external_id_field' => 'WP_USER_ID',
             'default_role' => '',
-            'role_map_json' => '{"subscriber":"Interessenten","member":"Mitglieder"}',
+            'role_map_json' => '{"Aktiv":"Aktiv",
+                                 "Passiv":"Passiv",
+                                 "Jugend":"Jugend",
+                                 "Förder": "Förder",
+                                 "Ehren": "Ehren",
+                                 "Behinderung": "Behinderung",
+                                 "member":"Mitgliedschaft"}',
             'allowed_ips' => '',
             'api_token_hash' => ''
         );
