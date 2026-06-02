@@ -28,7 +28,7 @@
     "PHONE": "+49123456789",
     "MOBILE": "+49123456789",
     "BERUF": "Softwareentwickler",
-    "GENDER": "Weiblich"
+    "GENDER": 1
   }
 
 }
