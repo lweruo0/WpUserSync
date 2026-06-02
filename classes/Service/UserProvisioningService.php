@@ -64,9 +64,9 @@ final class UserProvisioningService
         foreach ($roles as $role => $roledata) {
             echo "Assigning role '" . $role . "' to user ID " . $usr_id . ".<br />";
 
-            $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            //$roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
             if (isset($roleId)) {
-                $roleIds[] = $roleId;
+                $roleIds[] = array($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
             }
         }
 
