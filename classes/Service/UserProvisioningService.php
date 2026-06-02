@@ -62,6 +62,8 @@ final class UserProvisioningService
         $roleIds = array();
         $roles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
         foreach ($roles as $role => $roledata) {
+            echo "Assigning role '" . $role . "' to user ID " . $usr_id . ".<br />";
+
             $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
             if (isset($roleId)) {
                 $roleIds[] = $roleId;
