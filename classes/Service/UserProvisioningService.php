@@ -59,9 +59,13 @@ final class UserProvisioningService
             $user->assignDefaultRoles();
         }
 
+        $roleIds = array();
         $wpRoles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
         foreach ($roles as $role -> $roledata) {
-            $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            if (isset($roleId)) {
+                $roleIds[] = $roleId;
+            }
         }
 
         return array(
@@ -79,7 +83,7 @@ final class UserProvisioningService
         $roleName = trim($roleName);
         if ($userId <= 0 || $roleName === '') {
             echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
-            return false;
+            return null;
         }
 
         $role = new Role($gDb);
@@ -90,14 +94,15 @@ final class UserProvisioningService
 
         if ($role->isNewRecord()) {
             echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
-            return false;
+            return null;
         }
 
         $startDate = $this->normalizeDateToYmd($startDate) ?: DATE_NOW;
         $endDate = $this->normalizeDateToYmd($endDate) ?: DATE_MAX;
 
         $role->setMembership($userId, $startDate, $endDate, false, true);
-        return true;
+
+        return (int) $role->getValue('rol_id');
     }
 
 
