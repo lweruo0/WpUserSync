@@ -3,7 +3,7 @@
   "roles": [
     "member",
     "Aktiv",
-    "Boot",
+    "Boot"
   ],
   "profile": {
     "EMAIL": "max.mustermann@example.org",
