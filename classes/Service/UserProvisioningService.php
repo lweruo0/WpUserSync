@@ -60,6 +60,7 @@ final class UserProvisioningService
         $roleIds = array();
         $roles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
 
+
         foreach ($roles as $role => $roledata) {
 
             $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
@@ -75,6 +76,23 @@ final class UserProvisioningService
             'roles_applied' => $roleIds,
         );
     }
+
+    private function normalizeDateToYmd(string $dateValue): string
+    {
+        $dateValue = trim($dateValue);
+        if ($dateValue === '') {
+            return '';
+        }
+
+        try {
+            $date = new DateTime($dateValue);
+            return $date->format('Y-m-d');
+        } catch (Throwable) {
+            return '';
+        }
+    }
+
+
 
     public function assignRoleToUserByName(int $userId, string $roleName, string $startDate = '', string $endDate = ''): bool
     {
@@ -97,8 +115,8 @@ final class UserProvisioningService
             return null;
         }
 
-        $startDate = $startDate ?? DATE_NOW;
-        $endDate = $endDate ?? DATE_MAX;
+        $startDate = $this->normalizeDateToYmd($startDate) ?: DATE_NOW;
+        $endDate = $this->normalizeDateToYmd($endDate) ?: DATE_MAX;
 
         $role->setMembership($userId, $startDate, $endDate, false, true);
 
