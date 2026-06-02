@@ -94,7 +94,7 @@ final class UserProvisioningService
 
 
 
-    public function assignRoleToUserByName(int $userId, string $roleName, string $startDate = '', string $endDate = ''): bool
+    public function assignRoleToUserByName(int $userId, string $roleName, string $startDate = '', string $endDate = ''): int|null
     {
         global $gDb, $gCurrentOrgId;
 
