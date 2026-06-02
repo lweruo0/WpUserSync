@@ -60,7 +60,7 @@ final class UserProvisioningService
         }
 
         $roleIds = array();
-        $wpRoles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
+        $roles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
         foreach ($roles as $role -> $roledata) {
             $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
             if (isset($roleId)) {
