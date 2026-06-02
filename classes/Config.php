@@ -20,7 +20,7 @@ final class Config
                                  "Förder": "Förder",
                                  "Ehren": "Ehren",
                                  "Behinderung": "Behinderung",
-                                 "member":"Mitglied"}',
+                                 "member":"member"}',
             'allowed_ips' => '',
             'api_token_hash' => ''
         );
