@@ -97,8 +97,8 @@ final class UserProvisioningService
             return null;
         }
 
-        $startDate = $this->normalizeDateToYmd($startDate) ?: DATE_NOW;
-        $endDate = $this->normalizeDateToYmd($endDate) ?: DATE_MAX;
+        $startDate = $startDate ?? DATE_NOW;
+        $endDate = $endDate ?? DATE_MAX;
 
         $role->setMembership($userId, $startDate, $endDate, false, true);
 
