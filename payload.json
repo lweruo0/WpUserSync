@@ -1,11 +1,4 @@
-usr_login_name
-usr_password
-usr_uuid
-
-
 {
-
-
   "active": true,
   "roles": [
     "member",
@@ -20,8 +13,8 @@ usr_uuid
     "BIRTHDAY": "1990-01-01",
     "HOMEPAGE_USERNAME": "AAmustermann",
     "HOMEPAGE_PASSWORD": "password",
-    "STEMPEL": '',
-    "MEMBERNUMBER1": '',
+    "STEMPEL": "",
+    "MEMBERNUMBER1": "",
     "IBAN": "DE89370400440532013000",
     "BIC": "COBADEFFXXX",
     "BANK": "Commerzbank",
@@ -30,14 +23,12 @@ usr_uuid
     "FISHING_EXAM_LOCATION": "Ehingen",
     "FISHING_LICENSE_LOCATION":"dd",
     "MANDATEID1": "123456789",
-    "EMAIL": "",
     "FISHING_EXAM_DATE": "2024-06-01",
     "MANDATEDATE1": "2024-06-01",
     "PHONE": "+49123456789",
     "MOBILE": "+49123456789",
     "BERUF": "Softwareentwickler",
-    "GENDER": "male",
+    "GENDER": "male"
   }
 
-  
 }

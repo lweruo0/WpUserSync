@@ -35,29 +35,26 @@ final class RequestValidator
             throw new ApiException('JSON object expected.', 'invalid_payload', 400);
         }
 
+
+        $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
-        foreach (array('email', 'first_name', 'last_name') as $requiredField) {
-            if (!isset($decoded[$requiredField]) || trim((string) $decoded[$requiredField]) === '') {
+        foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY') as $requiredField) {
+            if (!isset($profileData[$requiredField]) || trim((string) $profileData[$requiredField]) === '') {
                 $errors[$requiredField] = 'required';
             }
         }
 
-        if (!empty($decoded['email']) && filter_var((string) $decoded['email'], FILTER_VALIDATE_EMAIL) === false) {
-            $errors['email'] = 'invalid';
+        if (!empty($profileData['EMAIL']) && filter_var((string) $profileData['EMAIL'], FILTER_VALIDATE_EMAIL) === false) {
+            $errors['EMAIL'] = 'invalid';
         }
 
         if ($errors !== array()) {
             throw new ApiException('Validation failed.', 'validation_failed', 422, $errors);
         }
 
-        $decoded['external_id'] = trim((string) ($decoded['external_id'] ?? ''));
-        $decoded['first_name'] = trim((string) $decoded['first_name']);
-        $decoded['last_name'] = trim((string) $decoded['last_name']);
-        $decoded['email'] = trim((string) $decoded['email']);
-        $decoded['username'] = trim((string) ($decoded['username'] ?? ''));
         $decoded['active'] = !array_key_exists('active', $decoded) || (bool) $decoded['active'];
         $decoded['roles'] = is_array($decoded['roles'] ?? null) ? array_values(array_unique(array_map('strval', $decoded['roles']))) : array();
-        $decoded['profile'] = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
+        $decoded['profile'] = $profileData;
 
         return $decoded;
     }

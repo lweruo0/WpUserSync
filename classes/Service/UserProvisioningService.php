@@ -32,12 +32,13 @@ final class UserProvisioningService
 
     public function upsert(array $payload): array
     {
-          
-        $userId = $this->findUserId($payload);
+        $profileData = $payload['profile'] ?? array();    
+    
+        $userId = $this->findUserId($profileData);
         $user = new User($this->db, $this->profileFields, $userId ?? 0);
         $isNew = $userId === null;
 
-        foreach ($payload as $fieldName => $value) {
+        foreach ($profileData as $fieldName => $value) {
             if ($this->profileFields->hasProperty($fieldName)) {
                 $user->setValue($fieldName, $value);
             }
@@ -63,16 +64,16 @@ final class UserProvisioningService
         return array(
             'status' => $isNew ? 'created' : 'updated',
             'user_id' => (int) $user->getValue('usr_id'),
-            'email' => $payload['email'],
+            'email' => $profileData['EMAIL'] ?? '',
             'roles_applied' => $roleIds,
         );
     }
 
-    private function findUserId(array $payload): ?int
+    private function findUserId(array $data): ?int
     {
-        $vorname = trim((string) ($payload['first_name'] ?? ''));
-        $nachname = trim((string) ($payload['last_name'] ?? ''));
-        $birthday = trim((string) ($payload['birthday'] ?? ''));
+        $vorname = trim((string) ($data['FIRST_NAME'] ?? ''));
+        $nachname = trim((string) ($data['LAST_NAME'] ?? ''));
+        $birthday = trim((string) ($data['BIRTHDAY'] ?? ''));
     
         if ($vorname !== '' && $nachname !== '' && $birthday !== '') {
             return $this->findUserIdbyFirstnameLastnameBirthday($vorname, $nachname, $birthday);
