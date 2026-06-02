@@ -67,9 +67,7 @@ final class RequestValidator
         }
 
         $decoded['active'] = !array_key_exists('active', $decoded) || (bool) $decoded['active'];
-        $decoded['roles'] = is_array($decoded['roles'] ?? null) ? array_values(array_unique(array_map('strval', $decoded['roles']))) : array();
-        $decoded['profile'] = $profileData;
-
+        $decoded['roles'] = $decoded['roles'] ?? array();
         return $decoded;
     }
 }

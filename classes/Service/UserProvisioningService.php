@@ -19,7 +19,6 @@ final class UserProvisioningService
 {
     private $db;
     private $profileFields;
-    private RoleMapper $roleMapper;
     private array $config;
     private array $existingFieldNames = array();
 
@@ -32,7 +31,6 @@ final class UserProvisioningService
             $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
 
-        $this->roleMapper = new RoleMapper($db);
         $this->config = $config;
     }
 
