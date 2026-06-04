@@ -46,14 +46,14 @@ final class RequestValidator
         if (!empty($profileData['EMAIL']) && filter_var((string) $profileData['EMAIL'], FILTER_VALIDATE_EMAIL) === false) {
             $errors['EMAIL'] = 'invalid';
         }
-        
-        $gender = $profileData['GENDER'];
-        $upper = strtoupper($gender);
-        if (in_array($upper, ['M', 'MALE'], true)) {
+
+        $gender = strtoupper($profileData['GENDER']);
+
+        if (in_array($gender, ['M', 'MALE'], true)) {
             $decoded['profile']['GENDER'] = 1;
-        } elseif (in_array($upper, ['W', 'F', 'FEMALE'], true)) {
+        } elseif (in_array($gender, ['W', 'F', 'FEMALE'], true)) {
             $decoded['profile']['GENDER'] = 2;
-        } elseif (in_array($upper, ['T', 'TRANS'], true)) {
+        } elseif (in_array($gender, ['T', 'TRANS'], true)) {
             $decoded['profile']['GENDER'] = 3;
         } else {
             $errors['GENDER'] = 'invalid';
