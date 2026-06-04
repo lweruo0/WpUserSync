@@ -42,41 +42,8 @@ final class ApiAuth
             return trim((string) $_SERVER['HTTP_X_API_TOKEN']);
         }
 
-        // 2) Fallback: Authorization Header
-        $authorizationHeader = self::getAuthorizationHeader();
-        if ($authorizationHeader !== '' && preg_match('/^Bearer\s+(.+)$/i', $authorizationHeader, $matches)) {
-            return trim($matches[1]);
-        }
 
         return '';
     }
 
-    private static function getAuthorizationHeader(): string
-    {
-        if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-            return trim((string) $_SERVER['HTTP_AUTHORIZATION']);
-        }
-
-        if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-            return trim((string) $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
-        }
-
-        if (function_exists('getallheaders')) {
-            foreach (getallheaders() as $key => $value) {
-                if (strcasecmp($key, 'Authorization') === 0) {
-                    return trim((string) $value);
-                }
-            }
-        }
-
-        if (function_exists('apache_request_headers')) {
-            foreach (apache_request_headers() as $key => $value) {
-                if (strcasecmp($key, 'Authorization') === 0) {
-                    return trim((string) $value);
-                }
-            }
-        }
-
-        return '';
-    }
 }

@@ -28,7 +28,6 @@ final class WpUserSyncPlugin
         echo '<p>Dieses Plugin stellt einen JSON-Endpoint bereit, um Benutzer aus WordPress in Admidio anzulegen oder zu aktualisieren.</p>';
         echo '<p><strong>Endpoint:</strong> <code>' . htmlspecialchars($endpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
         echo '<p><strong>Status:</strong> ' . ($this->config['enabled'] ? 'aktiv' : 'deaktiviert') . '</p>';
-        echo '<p><strong>Externes ID-Feld:</strong> <code>' . htmlspecialchars($this->config['external_id_field'], ENT_QUOTES, 'UTF-8') . '</code></p>';
         echo '</div>';
     }
 }

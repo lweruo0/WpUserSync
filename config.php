@@ -7,11 +7,7 @@ declare(strict_types=1);
 
 $plg_wpusersync_enabled = true;
 $plg_wpusersync_require_https = true;
-$plg_wpusersync_update_existing_by_email = true;
 $plg_wpusersync_assign_default_roles = true;
-$plg_wpusersync_external_id_field = '';
-$plg_wpusersync_default_role = '';
-$plg_wpusersync_role_map_json = '{"Aktiv":"Aktiv", "member":"Mitglieder"}';
 $plg_wpusersync_allowed_ips = '';
 $plg_wpusersync_api_token_hash = 'c495f4c87b5448dcd1fa754aba8a9d2948a5f0a112273f6307e81ba04d5e4535';
 

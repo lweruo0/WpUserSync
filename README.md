@@ -14,8 +14,7 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 
 1. Ordner `WpUserSync` nach `adm_plugins/` kopieren.
 2. `config_sample.php` nach `config.php` kopieren.
-3. In Admidio ein Profilfeld `WP_USER_ID` (interner Name) anlegen.
-4. SHA-256-Hash des geheimen Tokens in `config.php` eintragen.
+3. SHA-256-Hash des geheimen Tokens in `config.php` eintragen.
 
 ## Beispiel: Token-Hash
 

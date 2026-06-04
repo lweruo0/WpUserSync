@@ -35,9 +35,6 @@ final class RequestValidator
             throw new ApiException('JSON object expected.', 'invalid_payload', 400);
         }
 
-
-
-
         $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
         foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY', 'GENDER', 'STREET', 'POSTAL_CODE', 'CITY') as $requiredField) {
