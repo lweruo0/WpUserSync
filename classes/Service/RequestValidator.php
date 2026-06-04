@@ -46,7 +46,7 @@ final class RequestValidator
         if (!empty($profileData['EMAIL']) && filter_var((string) $profileData['EMAIL'], FILTER_VALIDATE_EMAIL) === false) {
             $errors['EMAIL'] = 'invalid';
         }
-
+        $errors['GENDER'] = $profileData['GENDER'];
         $gender = is_array($profileData['GENDER'] ?? null) ? $profileData['GENDER'] : 'male';
         $upper = strtoupper($gender);
         if (in_array($upper, ['M', 'MALE'], true)) {
@@ -59,7 +59,7 @@ final class RequestValidator
             $errors['GENDER'] = 'invalid';
         }
 
-        $errors['GENDER'] = $gender;
+        
         if ($errors !== array()) {
             throw new ApiException('Validation failed.', 'validation_failed', 422, $errors);
         }
