@@ -14,13 +14,6 @@ final class Config
             'assign_default_roles' => true,
             'external_id_field' => 'WP_USER_ID',
             'default_role' => '',
-            'role_map_json' => '{"Aktiv":"Aktiv",
-                                 "Passiv":"Passiv",
-                                 "Jugend":"Jugend",
-                                 "Förder": "Förder",
-                                 "Ehren": "Ehren",
-                                 "Behinderung": "Behinderung",
-                                 "member":"Mitglied"}',
             'allowed_ips' => '',
             'api_token_hash' => ''
         );
@@ -39,7 +32,6 @@ final class Config
             'assign_default_roles' => isset($plg_wpusersync_assign_default_roles) ? (bool) $plg_wpusersync_assign_default_roles : $defaults['assign_default_roles'],
             'external_id_field' => isset($plg_wpusersync_external_id_field) ? (string) $plg_wpusersync_external_id_field : $defaults['external_id_field'],
             'default_role' => isset($plg_wpusersync_default_role) ? (string) $plg_wpusersync_default_role : $defaults['default_role'],
-            'role_map_json' => isset($plg_wpusersync_role_map_json) ? (string) $plg_wpusersync_role_map_json : $defaults['role_map_json'],
             'allowed_ips' => isset($plg_wpusersync_allowed_ips) ? (string) $plg_wpusersync_allowed_ips : $defaults['allowed_ips'],
             'api_token_hash' => isset($plg_wpusersync_api_token_hash) ? (string) $plg_wpusersync_api_token_hash : $defaults['api_token_hash']
         );
