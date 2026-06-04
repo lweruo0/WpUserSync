@@ -22,11 +22,11 @@
     "BIRTHDAY": "1990-01-01",
     "HOMEPAGE_USERNAME": "AAmustermann",
     "HOMEPAGE_PASSWORD": "password",
-    "STEMPEL": "",
-    "MEMBERNUMBER1": "",
+    "STEMPEL": "stempel",
     "IBAN": "DE89370400440532013000",
     "BIC": "COBADEFFXXX",
     "BANK": "Commerzbank",
+    "MEMBERNUMBER1": "123456789",
     "FISHING_EXAM_PREP_COURSE": true,
     "FISHING_LICENSE_YEAR": 2024,
     "FISHING_EXAM_LOCATION": "Ehingen",
@@ -37,7 +37,7 @@
     "PHONE": "+49123456789",
     "MOBILE": "+49123456789",
     "BERUF": "Softwareentwickler",
-    "GENDER": 1
+    "GENDER": 2
   }
 
 }
