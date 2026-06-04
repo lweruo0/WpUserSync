@@ -37,7 +37,7 @@ final class RequestValidator
 
         $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
-        foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY', 'GENDER', 'STREET', 'POSTAL_CODE', 'CITY') as $requiredField) {
+        foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY', 'GENDER', 'STREET', 'POSTCODE', 'CITY') as $requiredField) {
             if (!isset($profileData[$requiredField]) || trim((string) $profileData[$requiredField]) === '') {
                 $errors[$requiredField] = 'required';
             }
