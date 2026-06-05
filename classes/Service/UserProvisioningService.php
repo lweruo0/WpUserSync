@@ -33,7 +33,25 @@ final class UserProvisioningService
 
         $this->config = $config;
     }
+    public function read_userdata(array $payload): array
+    {
+        $profileData = $payload['profile'] ?? array();    
+    
+        $userId = $this->findUserId($profileData);
 
+        if ($userId === null) {
+            return array(
+                'status' => 'error',
+                'code' => 'user_not_found',
+                'message' => 'User not found',
+            );
+        }
+        $user = new User($this->db, $this->profileFields, $userId);
+        $user->readDataByColumns(array(
+            'usr_id' => $userId,
+        ));
+        return $user->getProfileData();
+    }
     public function upsert(array $payload): array
     {
         $profileData = $payload['profile'] ?? array();    
