@@ -17,6 +17,7 @@ final class WpUserSyncPlugin
         $pluginName = basename($this->pluginDir);
         $writeEndpoint = $pluginName . '/api/write_user.php';
         $readEndpoint = $pluginName . '/api/read_user.php';
+        $configFile = $pluginName . '/adm_my_files/config.php';
 
         header('Content-Type: text/html; charset=utf-8');
         echo '<div class="admidio-plugin-content">';
