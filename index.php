@@ -8,9 +8,27 @@ use WpUserSync\classes\WpUserSyncPlugin;
 
 try {
     $plugin = new WpUserSyncPlugin(__DIR__);
-    $plugin->render();
+    //$plugin->render();
+
+    $headline = 'Wordpress User Sync';
+    $pluginUrl = ADMIDIO_URL . FOLDER_PLUGINS . '/wpusersync/index.php';
+    $gNavigation->addStartUrl($pluginUrl, $headline, 'bi-cloud');
+    
+    $pagePresenter = PagePresenter::withHtmlIDAndHeadline('wpusersync', $headline);
+    
+    // Top action buttons in the canonical Admidio page-function menu.
+    $pagePresenter->addPageFunctionsMenuItem('menu_item_api', 'Update API', SecurityUtils::encodeUrl($pluginUrl, array('plugin' => 'WpUserSync')), 'github');
+    
+    ob_start();
+    
+    $pagePresenter->addHtml($plugin->render());
+    $pagePresenter->show();
+
 } catch (Throwable $e) {
     header('Content-Type: text/plain; charset=utf-8');
     http_response_code(500);
     echo $e->getMessage();
 }
+
+
+
