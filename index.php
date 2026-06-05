@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap-admidio.php';
 require_once __DIR__ . '/bootstrap-plugin.php';
+use Admidio\UI\Presenter\PagePresenter;
+use Admidio\Infrastructure\Utils\SecurityUtils;
+use Admidio\Infrastructure\Exception;
 
 use WpUserSync\classes\WpUserSyncPlugin;
 
