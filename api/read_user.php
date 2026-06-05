@@ -7,6 +7,7 @@ require_once __DIR__ . '/../bootstrap-plugin.php';
 use WpUserSync\classes\Config;
 use WpUserSync\classes\Service\ApiAuth;
 use WpUserSync\classes\Service\ApiException;
+use WpUserSync\classes\Service\NonceValidator;
 use WpUserSync\classes\Service\JsonResponder;
 use WpUserSync\classes\Service\RequestValidator;
 use WpUserSync\classes\Service\UserProvisioningService;
@@ -19,10 +20,12 @@ try {
         throw new ApiException('Plugin is disabled.', 'plugin_disabled', 403);
     }
 
-    $clientIp = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
-    ApiAuth::assertAllowedIp((string) ($config['allowed_ips'] ?? ''), $clientIp);
     ApiAuth::assertToken(
         (string) ($config['api_token_hash'] ?? '')
+    );
+    NonceValidator::assertValid(
+        (string) ($config['api_token_hash'] ?? ''),
+        (int) ($config['nonce_max_age'] ?? 300)
     );
 
     $payload = RequestValidator::decodeJsonReadRequest((bool) ($config['require_https'] ?? true));

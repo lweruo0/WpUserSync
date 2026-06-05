@@ -5,19 +5,6 @@ namespace WpUserSync\classes\Service;
 
 final class ApiAuth
 {
-    public static function assertAllowedIp(string $allowedIps, string $clientIp): void
-    {
-        $allowedIps = trim($allowedIps);
-        if ($allowedIps === '') {
-            return;
-        }
-
-        $allowed = array_filter(array_map('trim', preg_split('/[\r\n,;]+/', $allowedIps) ?: array()));
-        if (!in_array($clientIp, $allowed, true)) {
-            throw new ApiException('IP address is not allowed.', 'ip_not_allowed', 403);
-        }
-    }
-
     public static function assertToken(string $expectedHash): void
     {
         if ($expectedHash === '') {

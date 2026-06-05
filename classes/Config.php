@@ -11,8 +11,8 @@ final class Config
             'enabled' => true,
             'require_https' => true,
             'assign_default_roles' => true,
-            'allowed_ips' => '',
-            'api_token_hash' => ''
+            'api_token_hash' => '',
+            'nonce_max_age' => 300
         );
 
         $configFile = $pluginDir . '/config.php';
@@ -26,8 +26,8 @@ final class Config
             'enabled' => isset($plg_wpusersync_enabled) ? (bool) $plg_wpusersync_enabled : $defaults['enabled'],
             'require_https' => isset($plg_wpusersync_require_https) ? (bool) $plg_wpusersync_require_https : $defaults['require_https'],
             'assign_default_roles' => isset($plg_wpusersync_assign_default_roles) ? (bool) $plg_wpusersync_assign_default_roles : $defaults['assign_default_roles'],
-            'allowed_ips' => isset($plg_wpusersync_allowed_ips) ? (string) $plg_wpusersync_allowed_ips : $defaults['allowed_ips'],
-            'api_token_hash' => isset($plg_wpusersync_api_token_hash) ? (string) $plg_wpusersync_api_token_hash : $defaults['api_token_hash']
+            'api_token_hash' => isset($plg_wpusersync_api_token_hash) ? (string) $plg_wpusersync_api_token_hash : $defaults['api_token_hash'],
+            'nonce_max_age' => isset($plg_wpusersync_nonce_max_age) ? (int) $plg_wpusersync_nonce_max_age : $defaults['nonce_max_age']
         );
     }
 }
