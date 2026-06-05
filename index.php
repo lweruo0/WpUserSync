@@ -31,7 +31,7 @@ try {
     
     ob_start();
     
-    $pagePresenter->addHtml('TEST');
+    $pagePresenter->addHtml($plugin->render());
     $pagePresenter->show();
 
 } catch (Throwable $e) {
