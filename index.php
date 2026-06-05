@@ -27,7 +27,7 @@ try {
     $pagePresenter = PagePresenter::withHtmlIDAndHeadline('wpusersync', $headline);
     
     // Top action buttons in the canonical Admidio page-function menu.
-    $pagePresenter->addPageFunctionsMenuItem('menu_item_api', 'Update API', SecurityUtils::encodeUrl($pluginUrl, array('plugin' => 'WpUserSync')), 'github');
+    // $pagePresenter->addPageFunctionsMenuItem('menu_item_api', 'Do Something', SecurityUtils::encodeUrl($pluginUrl, array('plugin' => 'WpUserSync')), 'github');
     
     ob_start();
     

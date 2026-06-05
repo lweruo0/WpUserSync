@@ -19,7 +19,8 @@ final class WpUserSyncPlugin
         $readEndpoint = $pluginName . '/api/read_user.php';
         $configFile =  '/adm_my_files/config.php';
 
-        header('Content-Type: text/html; charset=utf-8');
+
+        //header('Content-Type: text/html; charset=utf-8');
         echo '<div class="admidio-plugin-content">';
         echo '<h3>WordPress Benutzer-Synchronisation</h3>';
         echo '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
@@ -58,6 +59,7 @@ final class WpUserSyncPlugin
         echo '<p>Token-Hash erzeugen: <code>echo hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
         echo '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
         echo '</div>';
+
     }
 
     private function hasConfigurationWarnings(): bool
