@@ -7,27 +7,121 @@ final class Config
 {
     public static function load(string $pluginDir): array
     {
-        $defaults = array(
-            'enabled' => true,
-            'require_https' => true,
-            'assign_default_roles' => true,
-            'api_token_hash' => '',
-            'nonce_max_age' => 300
-        );
+        return self::resolve($pluginDir)['values'];
+    }
 
-        $configFile = $pluginDir . '/config.php';
-        if (!is_file($configFile)) {
-            return $defaults;
+    /**
+     * @return array{
+     *     values: array<string, bool|int|string>,
+     *     config_file: string,
+     *     config_file_exists: bool,
+     *     parameters: array<string, array<string, mixed>>
+     * }
+     */
+    public static function resolve(string $pluginDir): array
+    {
+        $definitions = self::getParameterDefinitions();
+        $configFile = self::getConfigFilePath($pluginDir);
+        $fileExists = is_file($configFile);
+
+        if ($fileExists) {
+            require $configFile;
         }
 
-        require $configFile;
+        $values = array();
+        $parameters = array();
+
+        foreach ($definitions as $key => $definition) {
+            $variable = $definition['variable'];
+            $isSet = $fileExists && isset(${$variable});
+            $value = $isSet ? ${$variable} : $definition['default'];
+            $value = self::castValue($value, $definition['type']);
+
+            $values[$key] = $value;
+            $parameters[$key] = array(
+                'key' => $key,
+                'variable' => $variable,
+                'label' => $definition['label'],
+                'description' => $definition['description'],
+                'type' => $definition['type'],
+                'default' => $definition['default'],
+                'value' => $value,
+                'is_set' => $isSet,
+                'uses_default' => !$isSet,
+                'required' => $definition['required'],
+            );
+        }
 
         return array(
-            'enabled' => isset($plg_wpusersync_enabled) ? (bool) $plg_wpusersync_enabled : $defaults['enabled'],
-            'require_https' => isset($plg_wpusersync_require_https) ? (bool) $plg_wpusersync_require_https : $defaults['require_https'],
-            'assign_default_roles' => isset($plg_wpusersync_assign_default_roles) ? (bool) $plg_wpusersync_assign_default_roles : $defaults['assign_default_roles'],
-            'api_token_hash' => isset($plg_wpusersync_api_token_hash) ? (string) $plg_wpusersync_api_token_hash : $defaults['api_token_hash'],
-            'nonce_max_age' => isset($plg_wpusersync_nonce_max_age) ? (int) $plg_wpusersync_nonce_max_age : $defaults['nonce_max_age']
+            'values' => $values,
+            'config_file' => $configFile,
+            'config_file_exists' => $fileExists,
+            'parameters' => $parameters,
         );
+    }
+
+    public static function getConfigFilePath(string $pluginDir): string
+    {
+        $admidioRoot = dirname(dirname($pluginDir));
+
+        return $admidioRoot . '/adm_my_files/config.php';
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private static function getParameterDefinitions(): array
+    {
+        return array(
+            'enabled' => array(
+                'variable' => 'plg_wpusersync_enabled',
+                'default' => true,
+                'type' => 'bool',
+                'required' => false,
+                'label' => 'Plugin aktiviert',
+                'description' => 'Schaltet alle API-Endpoints ein oder aus.',
+            ),
+            'require_https' => array(
+                'variable' => 'plg_wpusersync_require_https',
+                'default' => true,
+                'type' => 'bool',
+                'required' => false,
+                'label' => 'HTTPS erforderlich',
+                'description' => 'Lehnt API-Requests ohne HTTPS ab.',
+            ),
+            'assign_default_roles' => array(
+                'variable' => 'plg_wpusersync_assign_default_roles',
+                'default' => true,
+                'type' => 'bool',
+                'required' => false,
+                'label' => 'Standard-Rollen zuweisen',
+                'description' => 'Weist neuen Benutzern die Admidio-Standard-Rollen zu.',
+            ),
+            'api_token_hash' => array(
+                'variable' => 'plg_wpusersync_api_token_hash',
+                'default' => '',
+                'type' => 'string',
+                'required' => true,
+                'label' => 'API-Token-Hash',
+                'description' => 'SHA-256-Hash des geheimen API-Tokens (hex, 64 Zeichen).',
+            ),
+            'nonce_max_age' => array(
+                'variable' => 'plg_wpusersync_nonce_max_age',
+                'default' => 300,
+                'type' => 'int',
+                'required' => false,
+                'label' => 'Nonce-Gültigkeit',
+                'description' => 'Maximales Alter der X-Api-Nonce in Sekunden (Replay-Schutz).',
+            ),
+        );
+    }
+
+    private static function castValue(mixed $value, string $type): bool|int|string
+    {
+        return match ($type) {
+            'bool' => (bool) $value,
+            'int' => (int) $value,
+            default => (string) $value,
+        };
     }
 }

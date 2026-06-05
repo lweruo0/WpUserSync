@@ -18,11 +18,9 @@ Beispiel:
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import hmac
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -31,9 +29,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 DEFAULT_BASE_URL = "https://mitgliederverwaltung.bfv-ehingen.de/adm_plugins/wpusersync/api"
-DEFAULT_TOKEN = (
-    "ylL4JNQBrTE5Qy9hYAhSMiFw99vyZefeks3efG8TeSuYFyOUMfYecDdzMthxJ6DPfVVw5u7lNR9pzrgYumS07g"
-)
+DEFAULT_TOKEN = ("mein-geheimes-token")  
 READ_PROFILE_KEYS = ("FIRST_NAME", "LAST_NAME", "BIRTHDAY")
 
 
@@ -65,27 +61,11 @@ def load_payload(path: str) -> dict[str, Any]:
 
 
 def generate_nonce(token: str) -> str:
-    """Erzeugt X-Api-Nonce: AES-256-CBC(Unix-Zeitstempel) + HMAC-SHA256."""
+    """Erzeugt X-Api-Nonce: unixzeit.hmac_sha256(unixzeit, sha256(token))."""
     key = hashlib.sha256(token.encode("utf-8")).digest()
-    iv = os.urandom(16)
-    plaintext = str(int(time.time())).encode("utf-8")
-    pad_len = 16 - (len(plaintext) % 16)
-    padded = plaintext + bytes([pad_len] * pad_len)
-
-    try:
-        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    except ImportError as exc:
-        raise RuntimeError(
-            "Für die Nonce-Generierung wird 'cryptography' benötigt: pip install cryptography"
-        ) from exc
-
-    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
-    encryptor = cipher.encryptor()
-    ciphertext = encryptor.update(padded) + encryptor.finalize()
-
-    payload = base64.b64encode(iv + ciphertext).decode("ascii")
-    signature = hmac.new(key, payload.encode("ascii"), hashlib.sha256).hexdigest()
-    return f"{payload}.{signature}"
+    timestamp = str(int(time.time()))
+    signature = hmac.new(key, timestamp.encode("ascii"), hashlib.sha256).hexdigest()
+    return f"{timestamp}.{signature}"
 
 
 def build_read_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -216,6 +196,8 @@ def main() -> int:
         return 4
 
     print_exchange("Zurücklesen (read_user.php)", read_url, read_payload, read_status, read_headers, read_text)
+
+
 
     if 200 <= read_status < 300:
         return 0
