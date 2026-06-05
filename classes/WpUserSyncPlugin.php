@@ -19,21 +19,21 @@ final class WpUserSyncPlugin
         $readEndpoint = $pluginName . '/api/read_user.php';
         $configFile =  '/adm_my_files/config.php';
 
-        $hmtl = '';
+        $html = '';
         //header('Content-Type: text/html; charset=utf-8');
-        $hmtl.='<div class="admidio-plugin-content">';
-        $hmtl.= '<h3>WordPress Benutzer-Synchronisation</h3>';
-        $hmtl.= '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
-        $hmtl.= '<p><strong>Schreiben:</strong> <code>' . htmlspecialchars($writeEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-        $hmtl.= '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-        $hmtl.= '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $html.='<div class="admidio-plugin-content">';
+        $html.= '<h3>WordPress Benutzer-Synchronisation</h3>';
+        $html.= '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
+        $html.= '<p><strong>Schreiben:</strong> <code>' . htmlspecialchars($writeEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $html.= '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $html.= '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
 
 
-        $hmtl.= '<h4>Konfigurationsparameter</h4>';
-        $hmtl.= '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
-        $hmtl.= '<table class="table table-condensed table-striped">';
-        $hmtl.= '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
-        $hmtl.= '<tbody>';
+        $html.= '<h4>Konfigurationsparameter</h4>';
+        $html.= '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
+        $html.= '<table class="table table-condensed table-striped">';
+        $html.= '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
+        $html.= '<tbody>';
 
         global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_token_hash, $plg_wpusersync_nonce_max_age;
 
@@ -46,19 +46,19 @@ final class WpUserSyncPlugin
         );
 
         foreach ($parameters as $key => $value) {
-            $hmtl.= '<tr>';
-            $hmtl.= '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
-            $hmtl.= '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
-            $hmtl.= '</tr>';
+            $html.= '<tr>';
+            $html.= '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
+            $html.= '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
+            $html.= '</tr>';
         }
 
-        $hmtl.= '</tbody></table>';
+        $html.= '</tbody></table>';
 
-        $hmtl.= '<h4>Beispiel für adm_my_files/config.php</h4>';
-        $hmtl.= '<pre><code>' . htmlspecialchars($this->buildConfigExample(), ENT_QUOTES, 'UTF-8') . '</code></pre>';
-        $hmtl.= '<p>Token-Hash erzeugen: <code>$hmtl.= hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
-        $hmtl.= '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
-        $hmtl.= '</div>';
+        $html.= '<h4>Beispiel für adm_my_files/config.php</h4>';
+        $html.= '<pre><code>' . htmlspecialchars($this->buildConfigExample(), ENT_QUOTES, 'UTF-8') . '</code></pre>';
+        $html.= '<p>Token-Hash erzeugen: <code>$html.= hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
+        $html.= '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
+        $html.= '</div>';
         return $html;
 
     }
