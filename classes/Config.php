@@ -5,14 +5,8 @@ namespace WpUserSync\classes;
 
 final class Config
 {
-    public static function load(string $pluginDir): array
-    {
-        return self::resolve($pluginDir)['values'];
-    }
-
     /**
      * @return array{
-     *     values: array<string, bool|int|string>,
      *     config_file: string,
      *     config_file_exists: bool,
      *     parameters: array<string, array<string, mixed>>
@@ -22,22 +16,16 @@ final class Config
     {
         $definitions = self::getParameterDefinitions();
         $configFile = self::getConfigFilePath($pluginDir);
-        $fileExists = is_file($configFile);
-
-        if ($fileExists) {
-            require $configFile;
-        }
-
-        $values = array();
         $parameters = array();
 
         foreach ($definitions as $key => $definition) {
             $variable = $definition['variable'];
-            $isSet = $fileExists && isset(${$variable});
-            $value = $isSet ? ${$variable} : $definition['default'];
-            $value = self::castValue($value, $definition['type']);
+            $isSet = array_key_exists($variable, $GLOBALS);
+            $value = self::castValue(
+                $isSet ? $GLOBALS[$variable] : $definition['default'],
+                $definition['type']
+            );
 
-            $values[$key] = $value;
             $parameters[$key] = array(
                 'key' => $key,
                 'variable' => $variable,
@@ -53,9 +41,8 @@ final class Config
         }
 
         return array(
-            'values' => $values,
             'config_file' => $configFile,
-            'config_file_exists' => $fileExists,
+            'config_file_exists' => is_file($configFile),
             'parameters' => $parameters,
         );
     }

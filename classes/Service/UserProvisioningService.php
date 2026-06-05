@@ -19,10 +19,9 @@ final class UserProvisioningService
 {
     private $db;
     private $profileFields;
-    private array $config;
     private array $existingFieldNames = array();
 
-    public function __construct($db, $profileFields, array $config)
+    public function __construct($db, $profileFields)
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
@@ -30,8 +29,6 @@ final class UserProvisioningService
         foreach ($this->profileFields->getProfileFields() as $field) {
             $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
-
-        $this->config = $config;
     }
     public function read_userdata(array $payload): array
     {
@@ -74,7 +71,9 @@ final class UserProvisioningService
         $user->save();
         $usr_id = (int) $user->getValue('usr_id');
 
-        if ($isNew && !empty($this->config['assign_default_roles'])) {
+        global $plg_wpusersync_assign_default_roles;
+
+        if ($isNew && ($plg_wpusersync_assign_default_roles ?? true)) {
             $user->assignDefaultRoles();
         }
 

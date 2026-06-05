@@ -6,19 +6,12 @@ namespace WpUserSync\classes;
 final class WpUserSyncPlugin
 {
     private string $pluginDir;
-    private array $config;
     private array $configState;
 
     public function __construct(string $pluginDir)
     {
         $this->pluginDir = $pluginDir;
         $this->configState = Config::resolve($pluginDir);
-        $this->config = $this->configState['values'];
-    }
-
-    public function getConfig(): array
-    {
-        return $this->config;
     }
 
     public function render(): void
@@ -38,7 +31,7 @@ final class WpUserSyncPlugin
         echo '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
 
         if (!$this->configState['config_file_exists']) {
-            echo '<p style="color:#b45309;"><strong>Hinweis:</strong> Die Konfigurationsdatei wurde nicht gefunden. Es werden ausschließlich Standardwerte verwendet.</p>';
+            echo '<p style="color:#b45309;"><strong>Hinweis:</strong> Die Konfigurationsdatei wurde nicht gefunden. Es werden Standardwerte aus <code>$GLOBALS</code> verwendet.</p>';
         }
 
         if ($hasWarnings) {
@@ -46,7 +39,7 @@ final class WpUserSyncPlugin
         }
 
         echo '<h4>Konfigurationsparameter</h4>';
-        echo '<p>Die folgenden Variablen müssen in <code>adm_my_files/config.php</code> gesetzt werden:</p>';
+        echo '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen (via Admidio-Bootstrap):</p>';
         echo '<table class="table table-condensed table-striped">';
         echo '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
         echo '<tbody>';
