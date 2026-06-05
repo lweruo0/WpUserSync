@@ -17,7 +17,7 @@ final class WpUserSyncPlugin
         $pluginName = basename($this->pluginDir);
         $writeEndpoint = $pluginName . '/api/write_user.php';
         $readEndpoint = $pluginName . '/api/read_user.php';
-        $configFile = $pluginName . '/adm_my_files/config.php';
+        $configFile =  '/adm_my_files/config.php';
 
         header('Content-Type: text/html; charset=utf-8');
         echo '<div class="admidio-plugin-content">';
@@ -29,7 +29,7 @@ final class WpUserSyncPlugin
 
 
         echo '<h4>Konfigurationsparameter</h4>';
-        echo '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen (via Admidio-Bootstrap):</p>';
+        echo '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
         echo '<table class="table table-condensed table-striped">';
         echo '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
         echo '<tbody>';
@@ -48,8 +48,6 @@ final class WpUserSyncPlugin
             echo '<tr>';
             echo '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
             echo '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
-            echo '<td><code>' . htmlspecialchars($this->formatParameterValue($value), ENT_QUOTES, 'UTF-8') . '</code></td>';
-            echo '<td>' . $this->renderParameterStatus($value) . '</td>';
             echo '</tr>';
         }
 
