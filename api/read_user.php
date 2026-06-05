@@ -25,11 +25,17 @@ try {
         (string) ($config['api_token_hash'] ?? '')
     );
 
-    $payload = RequestValidator::decodeJsonRequest((bool) ($config['require_https'] ?? true));
+    $payload = RequestValidator::decodeJsonReadRequest((bool) ($config['require_https'] ?? true));
     $service = new UserProvisioningService($gDb, $gProfileFields, $config);
     $result = $service->read_userdata($payload);
 
     JsonResponder::send($result);
 } catch (ApiException $e) {
     JsonResponder::sendError($e);
+} catch (Throwable $e) {
+    JsonResponder::send(array(
+        'status' => 'error',
+        'code' => 'server_error',
+        'message' => $e->getMessage(),
+    ), 500);
 }

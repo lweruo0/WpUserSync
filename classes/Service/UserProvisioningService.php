@@ -35,22 +35,25 @@ final class UserProvisioningService
     }
     public function read_userdata(array $payload): array
     {
-        $profileData = $payload['profile'] ?? array();    
-    
+        $profileData = $payload['profile'] ?? array();
         $userId = $this->findUserId($profileData);
 
         if ($userId === null) {
-            return array(
-                'status' => 'error',
-                'code' => 'user_not_found',
-                'message' => 'User not found',
-            );
+            throw new ApiException('User not found.', 'user_not_found', 404);
         }
+
         $user = new User($this->db, $this->profileFields, $userId);
-        $user->readDataByColumns(array(
-            'usr_id' => $userId,
-        ));
-        return $user->getProfileData();
+        $profile = array();
+
+        foreach ($this->existingFieldNames as $fieldName) {
+            $profile[$fieldName] = $user->getValue($fieldName, 'database');
+        }
+
+        return array(
+            'status' => 'ok',
+            'user_id' => $userId,
+            'profile' => $profile,
+        );
     }
     public function upsert(array $payload): array
     {
