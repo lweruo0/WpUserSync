@@ -12,28 +12,28 @@ final class WpUserSyncPlugin
         $this->pluginDir = $pluginDir;
     }
 
-    public function render(): void
+    public function render(): string
     {
         $pluginName = basename($this->pluginDir);
         $writeEndpoint = $pluginName . '/api/write_user.php';
         $readEndpoint = $pluginName . '/api/read_user.php';
         $configFile =  '/adm_my_files/config.php';
 
-
+        $hmtl = '';
         //header('Content-Type: text/html; charset=utf-8');
-        echo '<div class="admidio-plugin-content">';
-        echo '<h3>WordPress Benutzer-Synchronisation</h3>';
-        echo '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
-        echo '<p><strong>Schreiben:</strong> <code>' . htmlspecialchars($writeEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-        echo '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-        echo '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $hmtl.='<div class="admidio-plugin-content">';
+        $hmtl.= '<h3>WordPress Benutzer-Synchronisation</h3>';
+        $hmtl.= '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
+        $hmtl.= '<p><strong>Schreiben:</strong> <code>' . htmlspecialchars($writeEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $hmtl.= '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
+        $hmtl.= '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
 
 
-        echo '<h4>Konfigurationsparameter</h4>';
-        echo '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
-        echo '<table class="table table-condensed table-striped">';
-        echo '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
-        echo '<tbody>';
+        $hmtl.= '<h4>Konfigurationsparameter</h4>';
+        $hmtl.= '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
+        $hmtl.= '<table class="table table-condensed table-striped">';
+        $hmtl.= '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
+        $hmtl.= '<tbody>';
 
         global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_token_hash, $plg_wpusersync_nonce_max_age;
 
@@ -46,19 +46,20 @@ final class WpUserSyncPlugin
         );
 
         foreach ($parameters as $key => $value) {
-            echo '<tr>';
-            echo '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
-            echo '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
-            echo '</tr>';
+            $hmtl.= '<tr>';
+            $hmtl.= '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
+            $hmtl.= '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
+            $hmtl.= '</tr>';
         }
 
-        echo '</tbody></table>';
+        $hmtl.= '</tbody></table>';
 
-        echo '<h4>Beispiel für adm_my_files/config.php</h4>';
-        echo '<pre><code>' . htmlspecialchars($this->buildConfigExample(), ENT_QUOTES, 'UTF-8') . '</code></pre>';
-        echo '<p>Token-Hash erzeugen: <code>echo hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
-        echo '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
-        echo '</div>';
+        $hmtl.= '<h4>Beispiel für adm_my_files/config.php</h4>';
+        $hmtl.= '<pre><code>' . htmlspecialchars($this->buildConfigExample(), ENT_QUOTES, 'UTF-8') . '</code></pre>';
+        $hmtl.= '<p>Token-Hash erzeugen: <code>$hmtl.= hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
+        $hmtl.= '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
+        $hmtl.= '</div>';
+        return $html;
 
     }
 
