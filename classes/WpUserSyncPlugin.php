@@ -6,12 +6,10 @@ namespace WpUserSync\classes;
 final class WpUserSyncPlugin
 {
     private string $pluginDir;
-    private array $configState;
 
     public function __construct(string $pluginDir)
     {
         $this->pluginDir = $pluginDir;
-        $this->configState = Config::resolve($pluginDir);
     }
 
     public function render(): void
@@ -19,8 +17,6 @@ final class WpUserSyncPlugin
         $pluginName = basename($this->pluginDir);
         $writeEndpoint = $pluginName . '/api/write_user.php';
         $readEndpoint = $pluginName . '/api/read_user.php';
-        $configFile = $this->configState['config_file'];
-        $hasWarnings = !$this->configState['config_file_exists'] || $this->hasConfigurationWarnings();
 
         header('Content-Type: text/html; charset=utf-8');
         echo '<div class="admidio-plugin-content">';
@@ -30,13 +26,6 @@ final class WpUserSyncPlugin
         echo '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
         echo '<p><strong>Konfigurationsdatei:</strong> <code>' . htmlspecialchars($configFile, ENT_QUOTES, 'UTF-8') . '</code></p>';
 
-        if (!$this->configState['config_file_exists']) {
-            echo '<p style="color:#b45309;"><strong>Hinweis:</strong> Die Konfigurationsdatei wurde nicht gefunden. Es werden Standardwerte aus <code>$GLOBALS</code> verwendet.</p>';
-        }
-
-        if ($hasWarnings) {
-            echo '<p style="color:#b45309;"><strong>Hinweis:</strong> Die API ist noch nicht vollständig konfiguriert. Details siehe unten.</p>';
-        }
 
         echo '<h4>Konfigurationsparameter</h4>';
         echo '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen (via Admidio-Bootstrap):</p>';
@@ -44,12 +33,22 @@ final class WpUserSyncPlugin
         echo '<thead><tr><th>Variable</th><th>Beschreibung</th><th>Aktueller Wert</th><th>Status</th></tr></thead>';
         echo '<tbody>';
 
-        foreach ($this->configState['parameters'] as $parameter) {
+        global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_token_hash, $plg_wpusersync_nonce_max_age;
+
+        $parameters = array(
+            'plg_wpusersync_enabled' => $plg_wpusersync_enabled,
+            'plg_wpusersync_require_https' => $plg_wpusersync_require_https,
+            'plg_wpusersync_assign_default_roles' => $plg_wpusersync_assign_default_roles,
+            'plg_wpusersync_api_token_hash' => $plg_wpusersync_api_token_hash,
+            'plg_wpusersync_nonce_max_age' => $plg_wpusersync_nonce_max_age,
+        );
+
+        foreach ($parameters as $key => $value) {
             echo '<tr>';
-            echo '<td><code>$' . htmlspecialchars((string) $parameter['variable'], ENT_QUOTES, 'UTF-8') . '</code></td>';
-            echo '<td>' . htmlspecialchars((string) $parameter['description'], ENT_QUOTES, 'UTF-8') . '</td>';
-            echo '<td><code>' . htmlspecialchars($this->formatParameterValue($parameter), ENT_QUOTES, 'UTF-8') . '</code></td>';
-            echo '<td>' . $this->renderParameterStatus($parameter) . '</td>';
+            echo '<td><code>$' . htmlspecialchars((string) $key, ENT_QUOTES, 'UTF-8') . '</code></td>';
+            echo '<td>' . htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td><code>' . htmlspecialchars($this->formatParameterValue($value), ENT_QUOTES, 'UTF-8') . '</code></td>';
+            echo '<td>' . $this->renderParameterStatus($value) . '</td>';
             echo '</tr>';
         }
 
