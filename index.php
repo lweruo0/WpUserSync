@@ -10,7 +10,14 @@ use Admidio\Infrastructure\Exception;
 use WpUserSync\classes\WpUserSyncPlugin;
 
 try {
+
+
     $plugin = new WpUserSyncPlugin(__DIR__);
+    
+    if (!$gValidLogin || !$gCurrentUser->isAdministrator()) {
+        throw new Exception('SYS_NO_RIGHTS');
+    }
+
     //$plugin->render();
 
     $headline = 'Wordpress User Sync';
@@ -24,7 +31,7 @@ try {
     
     ob_start();
     
-    $pagePresenter->addHtml($plugin->render());
+    $pagePresenter->addHtml('TEST');
     $pagePresenter->show();
 
 } catch (Throwable $e) {
