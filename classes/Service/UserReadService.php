@@ -81,8 +81,7 @@ final class UserReadService
         while ($row = $result->fetch()) {
             $users[] = [
                 'id' => (int) $row['usr_id'],
-                'login' => (string) $row['usr_login'],
-                'email' => (string) $row['usr_email'],
+                'login' => (string) $row['usr_login_name'],
                 'firstName' => (string) ($row['first_name'] ?? ''),
                 'lastName' => (string) ($row['last_name'] ?? ''),
                 'birthday' => (string) ($row['birthday'] ?? ''),
