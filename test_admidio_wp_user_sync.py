@@ -11,7 +11,7 @@ Beispiel:
 
     python test_admidio_wp_user_sync.py \
         --base-url "https://example.org/adm_plugins/WpUserSync/api" \
-        --token "mein-geheimes-token" \
+        --secret "mein-langes-zufaelliges-shared-secret" \
         --payload payload.json
 """
 
@@ -21,15 +21,18 @@ import argparse
 import hashlib
 import hmac
 import json
+import secrets
 import sys
 import time
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 DEFAULT_BASE_URL = "https://mitgliederverwaltung.bfv-ehingen.de/adm_plugins/wpusersync/api"
-DEFAULT_TOKEN = ("mein-geheimes-token")  
+DEFAULT_SECRET = ("mein-langes-zufaelliges-shared-secret")
+DEFAULT_CLIENT_ID = "wordpress-prod"
 READ_PROFILE_KEYS = ("FIRST_NAME", "LAST_NAME", "BIRTHDAY")
 
 
@@ -40,7 +43,8 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_BASE_URL,
         help="Basis-URL zum API-Verzeichnis (ohne Dateiname)",
     )
-    parser.add_argument("--token", default=DEFAULT_TOKEN, help="API-Token im Klartext")
+    parser.add_argument("--secret", default=DEFAULT_SECRET, help="Gemeinsames API-Secret")
+    parser.add_argument("--client-id", default=DEFAULT_CLIENT_ID, help="Feste Client-ID fuer das Request-Signing")
     parser.add_argument("--payload", default="payload.json", help="Pfad zur JSON-Datei mit dem Request-Body")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout in Sekunden (Default: 30)")
     return parser.parse_args()
@@ -60,12 +64,22 @@ def load_payload(path: str) -> dict[str, Any]:
         raise ValueError(f"Ungültiges JSON in {payload_path}: {exc}") from exc
 
 
-def generate_nonce(token: str) -> str:
-    """Erzeugt X-Api-Nonce: unixzeit.hmac_sha256(unixzeit, sha256(token))."""
-    key = hashlib.sha256(token.encode("utf-8")).digest()
+def build_signature_headers(method: str, url: str, secret: str, client_id: str, body: bytes) -> dict[str, str]:
+    """Erzeugt Header für HMAC Request Signing."""
     timestamp = str(int(time.time()))
-    signature = hmac.new(key, timestamp.encode("ascii"), hashlib.sha256).hexdigest()
-    return f"{timestamp}.{signature}"
+    nonce = secrets.token_hex(16)
+    body_hash = hashlib.sha256(body).hexdigest()
+    path = urlparse(url).path or "/"
+    canonical = "\n".join([method.upper(), path, client_id, timestamp, nonce, body_hash])
+    signature = hmac.new(secret.encode("utf-8"), canonical.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    return {
+        "X-Api-Client-Id": client_id,
+        "X-Api-Timestamp": timestamp,
+        "X-Api-Nonce": nonce,
+        "X-Api-Body-Sha256": body_hash,
+        "X-Api-Signature": signature,
+    }
 
 
 def build_read_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -92,23 +106,26 @@ def build_read_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def send_request(
     url: str,
-    token: str,
-    nonce: str,
+    secret: str,
+    client_id: str,
     payload: dict[str, Any],
     timeout: int,
 ) -> tuple[int, str, dict[str, str]]:
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    signature_headers = build_signature_headers("POST", url, secret, client_id, body)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "WpUserSync-TestClient/1.0",
+    }
+    headers.update(signature_headers)
+
     request = Request(
         url=url,
         data=body,
         method="POST",
-        headers={
-            "X-Api-Token": token,
-            "X-Api-Nonce": nonce,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "User-Agent": "WpUserSync-TestClient/1.0",
-        },
+        headers=headers,
     )
 
     try:
@@ -165,11 +182,10 @@ def main() -> int:
         return 2
 
     try:
-        write_nonce = generate_nonce(args.token)
         write_status, write_text, write_headers = send_request(
             url=write_url,
-            token=args.token,
-            nonce=write_nonce,
+            secret=args.secret,
+            client_id=args.client_id,
             payload=payload,
             timeout=args.timeout,
         )
@@ -183,11 +199,10 @@ def main() -> int:
         return 1
 
     try:
-        read_nonce = generate_nonce(args.token)
         read_status, read_text, read_headers = send_request(
             url=read_url,
-            token=args.token,
-            nonce=read_nonce,
+            secret=args.secret,
+            client_id=args.client_id,
             payload=read_payload,
             timeout=args.timeout,
         )

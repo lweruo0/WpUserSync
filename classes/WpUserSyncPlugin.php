@@ -33,13 +33,13 @@ final class WpUserSyncPlugin
         $html.= '<thead><tr><th>Variable</th><th>Wert</th></tr></thead>';
         $html.= '<tbody>';
 
-        global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_token_hash, $plg_wpusersync_nonce_max_age;
+        global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_secret, $plg_wpusersync_nonce_max_age;
 
         $parameters = array(
             'plg_wpusersync_enabled' => $plg_wpusersync_enabled,
             'plg_wpusersync_require_https' => $plg_wpusersync_require_https,
             'plg_wpusersync_assign_default_roles' => $plg_wpusersync_assign_default_roles,
-            'plg_wpusersync_api_token_hash' => $plg_wpusersync_api_token_hash,
+            'plg_wpusersync_api_secret' => $plg_wpusersync_api_secret,
             'plg_wpusersync_nonce_max_age' => $plg_wpusersync_nonce_max_age,
         );
 
@@ -54,8 +54,8 @@ final class WpUserSyncPlugin
 
         $html.= '<h4>Beispiel für adm_my_files/config.php</h4>';
         $html.= '<pre><code>' . htmlspecialchars($this->buildConfigExample(), ENT_QUOTES, 'UTF-8') . '</code></pre>';
-        $html.= '<p>Token-Hash erzeugen: <code>$html.= hash(\'sha256\', \'mein-geheimes-token\');</code></p>';
-        $html.= '<p>API-Header: <code>X-Api-Token</code>, <code>X-Api-Nonce</code> (Format: <code>unixzeit.hmac_sha256</code>)</p>';
+        $html.= '<p>API-Secret: lang und zufaellig waehlen (mindestens 32 Zeichen).</p>';
+        $html.= '<p>API-Header: <code>X-Api-Client-Id</code>, <code>X-Api-Timestamp</code>, <code>X-Api-Nonce</code>, <code>X-Api-Body-Sha256</code>, <code>X-Api-Signature</code></p>';
         $html.= '</div>';
         return $html;
 
@@ -64,11 +64,11 @@ final class WpUserSyncPlugin
     private function hasConfigurationWarnings(): bool
     {
         foreach ($this->configState['parameters'] as $parameter) {
-            if ($parameter['uses_default'] && ($parameter['required'] || $parameter['key'] === 'api_token_hash')) {
+            if ($parameter['uses_default'] && ($parameter['required'] || $parameter['key'] === 'api_secret')) {
                 return true;
             }
 
-            if ($parameter['key'] === 'api_token_hash' && (string) $parameter['value'] === '') {
+            if ($parameter['key'] === 'api_secret' && (string) $parameter['value'] === '') {
                 return true;
             }
         }
@@ -84,7 +84,7 @@ final class WpUserSyncPlugin
             return $value ? 'true' : 'false';
         }
 
-        if ($parameter['key'] === 'api_token_hash') {
+        if ($parameter['key'] === 'api_secret') {
             if ((string) $value === '') {
                 return '(leer)';
             }
@@ -97,7 +97,7 @@ final class WpUserSyncPlugin
 
     private function renderParameterStatus(array $parameter): string
     {
-        if ($parameter['key'] === 'api_token_hash' && (string) $parameter['value'] === '') {
+        if ($parameter['key'] === 'api_secret' && (string) $parameter['value'] === '') {
             return '<span style="color:#b91c1c;">Pflichtwert fehlt</span>';
         }
 
@@ -119,7 +119,7 @@ final class WpUserSyncPlugin
             '$plg_wpusersync_enabled = true;',
             '$plg_wpusersync_require_https = true;',
             '$plg_wpusersync_assign_default_roles = true;',
-            '$plg_wpusersync_api_token_hash = \'' . hash('sha256', 'mein-geheimes-token') . '\';',
+            '$plg_wpusersync_api_secret = \'mein-langes-zufaelliges-shared-secret\';',
             '$plg_wpusersync_nonce_max_age = 300;',
         );
 

@@ -5,9 +5,9 @@ namespace WpUserSync\classes\Service;
 
 final class RequestValidator
 {
-    public static function decodeJsonReadRequest(bool $requireHttps): array
+    public static function decodeJsonReadRequest(bool $requireHttps, ?string $rawBody = null): array
     {
-        $decoded = self::decodeJsonBody($requireHttps);
+        $decoded = self::decodeJsonBody($requireHttps, $rawBody);
         $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
 
@@ -25,9 +25,9 @@ final class RequestValidator
         return $decoded;
     }
 
-    public static function decodeJsonRequest(bool $requireHttps): array
+    public static function decodeJsonRequest(bool $requireHttps, ?string $rawBody = null): array
     {
-        $decoded = self::decodeJsonBody($requireHttps);
+        $decoded = self::decodeJsonBody($requireHttps, $rawBody);
         $profileData = is_array($decoded['profile'] ?? null) ? $decoded['profile'] : array();
         $errors = array();
         foreach (array('EMAIL', 'FIRST_NAME', 'LAST_NAME', 'BIRTHDAY', 'GENDER', 'STREET', 'POSTCODE', 'CITY') as $requiredField) {
@@ -61,7 +61,7 @@ final class RequestValidator
         return $decoded;
     }
 
-    private static function decodeJsonBody(bool $requireHttps): array
+    private static function decodeJsonBody(bool $requireHttps, ?string $rawBody = null): array
     {
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             throw new ApiException('Only POST is allowed.', 'method_not_allowed', 405);
@@ -76,7 +76,10 @@ final class RequestValidator
             throw new ApiException('Content-Type application/json expected.', 'unsupported_media_type', 415);
         }
 
-        $rawBody = file_get_contents('php://input');
+        if ($rawBody === null) {
+            $rawBody = file_get_contents('php://input');
+        }
+
         if ($rawBody === false || trim($rawBody) === '') {
             throw new ApiException('Request body is empty.', 'empty_body', 400);
         }
