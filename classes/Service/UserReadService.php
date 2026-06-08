@@ -6,6 +6,7 @@ namespace WpUserSync\classes\Service;
 use Admidio\Infrastructure\Database;
 use Admidio\Infrastructure\Utils\ArrayUtils;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
+use Admidio\Users\Entity\User;
 
 final class UserReadService
 {
@@ -13,6 +14,7 @@ final class UserReadService
     private ProfileFields $profileFields;
     private array $query;
     private array $payload;
+    private array $existingFieldNames = array();
 
     public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
     {
@@ -20,7 +22,11 @@ final class UserReadService
         $this->profileFields = $profileFields;
         $this->query = $query;
         $this->payload = $payload;
+        foreach ($this->profileFields->getProfileFields() as $field) {
+            $this->existingFieldNames[] = $field->getValue('usf_name_intern');
+        }
     }
+
 
     /**
      * GET /core/users – List all users
