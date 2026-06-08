@@ -37,7 +37,7 @@ final class UserReadService
         $lastName = trim((string) ($filters['lastName'] ?? ''));
         $birthday = trim((string) ($filters['birthday'] ?? ''));
 
-        $sql = 'SELECT u.usr_id, u.usr_login, u.usr_email,
+        $sql = 'SELECT u.usr_id, u.usr_login_name,
                        first_name.usd_value AS first_name,
                        last_name.usd_value AS last_name,
                        birthday.usd_value AS birthday
