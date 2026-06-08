@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 
-use Admidio\Database\Database;
+use Admidio\Infrastructure\Database;
 use Admidio\Infrastructure\Utils\ArrayUtils;
 
 final class UserReadService

@@ -10,6 +10,7 @@ final class ApiRouter
     private string $requestUri;
     private array $pathParts = [];
     private array $pathParams = [];
+    
 
     public function __construct()
     {
@@ -57,11 +58,11 @@ final class ApiRouter
      */
     private function matchPattern(string $pattern): bool
     {
-        $regex = preg_replace_callback('/\{(\w+)\}/', function ($m) {
+        $regex = preg_replace_callback('/\\\\\{(\w+)\\\\\}/', function ($m) {
             return '(?P<' . $m[1] . '>[^/]+)';
         }, preg_quote($pattern, '#'));
 
-        $regex = '#^' . $regex . '$#';
+        $regex = '#^' . $regex . '$#i';
         if (!preg_match($regex, $this->path, $matches)) {
             return false;
         }

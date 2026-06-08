@@ -5,6 +5,7 @@ database.sql
 *.py[codz]
 *$py.class
 
+test*
 *.SDF
 *.txd
 *.txv
@@ -14,3 +15,5 @@ database.sql
 infos.dat
 # C extensions
 *.so
+test_admidio_wp_user_sync.py
+test_api.py

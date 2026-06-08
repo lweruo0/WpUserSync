@@ -41,7 +41,7 @@ try {
     if (!is_array($payload)) {
         $payload = array();
     }    
-
+    global $gDb; // Assuming $gDb is defined in the bootstrap files
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'GET') {
         $Service = new UserReadService($gDb, $_GET, $payload);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'POST') {
@@ -53,56 +53,56 @@ try {
 
     $result = null;
     $router = new ApiRouter();
-    if ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users')) {
+    if ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users')) {
         $result = $Service->listUsers();
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUser($userId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/fields')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserFields($userId);
-    } elseif ($router->match('POST', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/fields')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->setUserField($userId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/fields/{name}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
         $userId = (int) $router->getPathParam('userId');
         $name = (string) $router->getPathParam('name');
         $result = $Service->getUserField($userId, $name);
-    } elseif ($router->match('POST', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/fields/{name}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
         $userId = (int) $router->getPathParam('userId');
         $name = (string) $router->getPathParam('name');
         $result = $Service->setUserFieldByName($userId, $name);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/lists')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/lists')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserLists($userId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/lists/{listId}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/lists/{listId}')) {
         $userId = (int) $router->getPathParam('userId');
         $listId = (int) $router->getPathParam('listId');
         $result = $Service->getUserList($userId, $listId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserMemberships($userId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/{memId}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
         $userId = (int) $router->getPathParam('userId');
         $memId = (int) $router->getPathParam('memId');
         $result = $Service->getUserMembership($userId, $memId);
-    } elseif ($router->match('POST', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/{memId}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
         $userId = (int) $router->getPathParam('userId');
         $memId = (int) $router->getPathParam('memId');
         $result = $Service->updateMembership($userId, $memId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
         $userId = (int) $router->getPathParam('userId');
         $roleId = (int) $router->getPathParam('roleId');
         $result = $Service->getUserMembershipsForRole($userId, $roleId);
-    } elseif ($router->match('POST', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
         $userId = (int) $router->getPathParam('userId');
         $roleId = (int) $router->getPathParam('roleId');
         $result = $Service->createMembershipForRole($userId, $roleId);
-    } elseif ($router->match('GET', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
         $userId = (int) $router->getPathParam('userId');
         $orgId = (int) $router->getPathParam('orgId');
         $result = $Service->getUserMembershipsForOrg($userId, $orgId);
-    } elseif ($router->match('POST', '/adm_plugins/WpUserSync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
         $userId = (int) $router->getPathParam('userId');
         $orgId = (int) $router->getPathParam('orgId');
         $result = $Service->createMembershipForOrg($userId, $orgId);
