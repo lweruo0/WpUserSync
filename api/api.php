@@ -41,11 +41,11 @@ try {
     if (!is_array($payload)) {
         $payload = array();
     }    
-    global $gDb; // Assuming $gDb is defined in the bootstrap files
+    global $gDb, $gProfileFields; // Assuming $gDb is defined in the bootstrap files
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'GET') {
-        $Service = new UserReadService($gDb, $_GET, $payload);
+        $Service = new UserReadService($gDb, $gProfileFields, $_GET, $payload);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'POST') {
-        $Service = new UserWriteService($gDb, $_POST, $payload);
+        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
     } else {
         throw new ApiException('Only GET and POST methods are allowed.', 'method_not_allowed', 405);
     }

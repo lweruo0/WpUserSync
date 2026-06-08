@@ -2,18 +2,20 @@
 declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
-
+use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Infrastructure\Database;
 
 final class UserWriteService
 {
     private Database $db;
+    private ProfileFields $profileFields;
     private array $query;
     private array $payload;
 
-    public function __construct(Database $db, array $query = [], array $payload = [])
+    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
     {
         $this->db = $db;
+        $this->profileFields = $profileFields;
         $this->query = $query;
         $this->payload = $payload;
     }

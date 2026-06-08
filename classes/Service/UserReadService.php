@@ -5,16 +5,19 @@ namespace WpUserSync\classes\Service;
 
 use Admidio\Infrastructure\Database;
 use Admidio\Infrastructure\Utils\ArrayUtils;
+use Admidio\ProfileFields\ValueObjects\ProfileFields;
 
 final class UserReadService
 {
     private Database $db;
+    private ProfileFields $profileFields;
     private array $query;
     private array $payload;
 
-    public function __construct(Database $db, array $query = [], array $payload = [])
+    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
     {
         $this->db = $db;
+        $this->profileFields = $profileFields;
         $this->query = $query;
         $this->payload = $payload;
     }
@@ -29,20 +32,60 @@ final class UserReadService
         $limit = min((int) ($query['limit'] ?? 50), 500);
         $offset = max(0, (int) ($query['offset'] ?? 0));
 
-        $sql = 'SELECT usr_id, usr_login, usr_email, usr_last_name, usr_first_name 
-                FROM ' . TBL_USERS . ' 
-                ORDER BY usr_id 
-                LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+        $filters = is_array($this->payload['filter'] ?? null) ? $this->payload['filter'] : array();
+        $firstName = trim((string) ($filters['firstName'] ?? ''));
+        $lastName = trim((string) ($filters['lastName'] ?? ''));
+        $birthday = trim((string) ($filters['birthday'] ?? ''));
 
-        $result = $this->db->queryPrepared($sql);
+        $sql = 'SELECT u.usr_id, u.usr_login, u.usr_email,
+                       first_name.usd_value AS first_name,
+                       last_name.usd_value AS last_name,
+                       birthday.usd_value AS birthday
+                  FROM ' . TBL_USERS . ' AS u
+            LEFT JOIN ' . TBL_USER_DATA . ' AS first_name
+                    ON first_name.usd_usr_id = u.usr_id
+                   AND first_name.usd_usf_id = ?
+            LEFT JOIN ' . TBL_USER_DATA . ' AS last_name
+                    ON last_name.usd_usr_id = u.usr_id
+                   AND last_name.usd_usf_id = ?
+            LEFT JOIN ' . TBL_USER_DATA . ' AS birthday
+                    ON birthday.usd_usr_id = u.usr_id
+                   AND birthday.usd_usf_id = ?
+                 WHERE u.usr_valid = true';
+
+        $queryParams = array(
+            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
+            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
+            $this->profileFields->getProperty('BIRTHDAY', 'usf_id')
+        );
+
+        if ($firstName !== '') {
+            $sql .= ' AND first_name.usd_value = ?';
+            $queryParams[] = $firstName;
+        }
+
+        if ($lastName !== '') {
+            $sql .= ' AND last_name.usd_value = ?';
+            $queryParams[] = $lastName;
+        }
+
+        if ($birthday !== '') {
+            $sql .= ' AND birthday.usd_value = ?';
+            $queryParams[] = $birthday;
+        }
+
+        $sql .= ' ORDER BY u.usr_id LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+        $result = $this->db->queryPrepared($sql, $queryParams);
         $users = [];
         while ($row = $result->fetch()) {
             $users[] = [
                 'id' => (int) $row['usr_id'],
                 'login' => (string) $row['usr_login'],
                 'email' => (string) $row['usr_email'],
-                'firstName' => (string) $row['usr_first_name'],
-                'lastName' => (string) $row['usr_last_name'],
+                'firstName' => (string) ($row['first_name'] ?? ''),
+                'lastName' => (string) ($row['last_name'] ?? ''),
+                'birthday' => (string) ($row['birthday'] ?? ''),
             ];
         }
 
@@ -332,5 +375,37 @@ final class UserReadService
         if (!$result->fetch()) {
             throw new ApiException('User not found.', 'user_not_found', 404);
         }
+    }
+
+    public function findUserIdbyFirstnameLastnameBirthday(string $firstName, string $lastName, string $birthday): ?int
+    {
+        // search for existing user with same name and read user data
+        $sql = 'SELECT MAX(usr_id) AS usr_id
+                  FROM '.TBL_USERS.'
+            INNER JOIN '.TBL_USER_DATA.' AS last_name
+                    ON last_name.usd_usr_id = usr_id
+                   AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
+                   AND last_name.usd_value  = ? -- $user->getValue(\'LAST_NAME\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS birthday
+                    ON birthday.usd_usr_id = usr_id
+                   AND birthday.usd_usf_id = ? -- $gProfileFields->getProperty(\'BIRTHDAY\', \'usf_id\')
+                   AND birthday.usd_value  = ? -- $user->getValue(\'BIRTHDAY\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS first_name
+                    ON first_name.usd_usr_id = usr_id
+                   AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
+                   AND first_name.usd_value  = ? -- $user->getValue(\'FIRST_NAME\', \'database\')
+                 WHERE usr_valid = true';
+        $queryParams = array(
+            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
+            $lastName,
+            $this->profileFields->getProperty('BIRTHDAY', 'usf_id'),
+            $birthday,
+            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
+            $firstName
+        );
+        $pdoStatement = $this->db->queryPrepared($sql, $queryParams);
+        $maxUserId = (int) $pdoStatement->fetchColumn();
+
+        return $maxUserId > 0 ? $maxUserId : null;
     }
 }
