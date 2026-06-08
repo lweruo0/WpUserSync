@@ -102,28 +102,28 @@ final class UserReadService
      */
     public function getUser(int $userId): array
     {
-        $sql = 'SELECT usr_id, usr_login, usr_email, usr_last_name, usr_first_name 
-                FROM ' . TBL_USERS . ' 
-                WHERE usr_id = ?';
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
 
-        $result = $this->db->queryPrepared($sql, [(int) $userId]);
-        $row = $result->fetch();
-
-        if (!$row) {
+        if ($usrId === 0) {
             throw new ApiException('User not found.', 'user_not_found', 404);
         }
 
-        return [
+        $profile = array();
+
+        foreach ($this->existingFieldNames as $fieldName) {
+            $profile[$fieldName] = $user->getValue($fieldName, 'database');
+        }
+
+        return array(
             'status' => 'success',
-            'data' => [
-                'id' => (int) $row['usr_id'],
-                'login' => (string) $row['usr_login'],
-                'email' => (string) $row['usr_email'],
-                'firstName' => (string) $row['usr_first_name'],
-                'lastName' => (string) $row['usr_last_name'],
-            ],
-        ];
+            'user_id' => $userId,
+            'profile' => $profile,
+        );
     }
+
+
+
 
     /**
      * GET /core/users/{userId}/fields – Get all custom fields for user
