@@ -17,7 +17,6 @@ final class WpUserSyncPlugin
         $pluginName = basename($this->pluginDir);
         $writeEndpoint = $pluginName . '/api/write_user.php';
         $readEndpoint = $pluginName . '/api/read_user.php';
-        $configFile =  '/adm_my_files/config.php';
 
         $html = '';
         //header('Content-Type: text/html; charset=utf-8');
@@ -59,57 +58,6 @@ final class WpUserSyncPlugin
         $html.= '</div>';
         return $html;
 
-    }
-
-    private function hasConfigurationWarnings(): bool
-    {
-        foreach ($this->configState['parameters'] as $parameter) {
-            if ($parameter['uses_default'] && ($parameter['required'] || $parameter['key'] === 'api_secret')) {
-                return true;
-            }
-
-            if ($parameter['key'] === 'api_secret' && (string) $parameter['value'] === '') {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function formatParameterValue(array $parameter): string
-    {
-        $value = $parameter['value'];
-
-        if ($parameter['type'] === 'bool') {
-            return $value ? 'true' : 'false';
-        }
-
-        if ($parameter['key'] === 'api_secret') {
-            if ((string) $value === '') {
-                return '(leer)';
-            }
-
-            return substr((string) $value, 0, 8) . '...';
-        }
-
-        return (string) $value;
-    }
-
-    private function renderParameterStatus(array $parameter): string
-    {
-        if ($parameter['key'] === 'api_secret' && (string) $parameter['value'] === '') {
-            return '<span style="color:#b91c1c;">Pflichtwert fehlt</span>';
-        }
-
-        if ($parameter['uses_default']) {
-            $defaultValue = $parameter['type'] === 'bool'
-                ? ($parameter['default'] ? 'true' : 'false')
-                : (string) $parameter['default'];
-
-            return '<span style="color:#b45309;">Standardwert: ' . htmlspecialchars($defaultValue, ENT_QUOTES, 'UTF-8') . '</span>';
-        }
-
-        return '<span style="color:#15803d;">gesetzt</span>';
     }
 
     private function buildConfigExample(): string

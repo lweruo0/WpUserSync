@@ -6,8 +6,6 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 
 - `index.php` – Infoseite mit Konfigurationsstatus
 - `api/api.php` – RESTful JSON-API für Benutzer, Felder, Listen und Mitgliedschaften (via `.htaccess`)
-- `api/write_user.php` – JSON-Endpoint zum Anlegen/Aktualisieren (Legacy)
-- `api/read_user.php` – JSON-Endpoint zum Auslesen von Profildaten (Legacy)
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
 - `bootstrap-plugin.php` – lokaler PSR-4-Autoloader
 
@@ -82,7 +80,6 @@ BODY_SHA256
 - `POST /core/users/{userId}/fields/{name}` – Custom-Field byName setzen (mit `{"value":"yyy"}`)
 
 ### Listen
-
 - `GET /core/users/{userId}/lists` – Listen, in denen Benutzer aktiv ist
 - `GET /core/users/{userId}/lists/{listId}` – Listendetails (nur wenn Mitglied)
 

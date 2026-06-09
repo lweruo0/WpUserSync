@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace WpUserSync\classes\Service;
 
 use Admidio\Infrastructure\Database;
-use Admidio\Infrastructure\Utils\ArrayUtils;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Users\Entity\User;
 
@@ -25,6 +24,32 @@ final class UserReadService
         foreach ($this->profileFields->getProfileFields() as $field) {
             $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
+    }
+    /**
+     * GET /core/roles – List all roles
+     */
+    public function listRoles(): array
+    {
+        // read information about the roles
+        $sql = 'SELECT rol_id, rol_name, rol_valid, rol_uuid, rol_cat_id
+            FROM ' . TBL_ROLES . '
+            WHERE rol_valid = true';
+        $rolesStatement = $this->db->queryPrepared($sql);
+        $rolesData = $rolesStatement->fetchAll();   
+    }
+
+    /**
+     * GET /core/roles – List all roles
+     */
+    public function listRoleCategories(): array
+    {
+        // read information about the roles
+        $sql = 'SELECT cat_id, cat_org_id, cat_name_intern, cat_uuid
+            FROM ' . TBL_CATEGORIES . '
+            WHERE cat_type = \'ROLE\'';
+
+        $rolesStatement = $this->db->queryPrepared($sql);
+        $rolesData = $rolesStatement->fetchAll();   
     }
 
 
@@ -413,4 +438,9 @@ final class UserReadService
 
         return $maxUserId > 0 ? $maxUserId : null;
     }
+
+
+
+
+
 }
