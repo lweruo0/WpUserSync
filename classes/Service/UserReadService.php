@@ -233,25 +233,9 @@ final class UserReadService
     }
 
     /**
-     * GET /core/users/{userId}/next_memberships – get possible next memberships for user based on current memberships and role/list/org structure
-     */
-    public function getUserNextMemberships(int $userId): array
-    {
-        $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
-
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
-
-
-    }
-
-
-    /**
      * GET /core/users/{userId}/memberships – Get all roles for user
      */
-    public function getUserMemberships(int $userId): array
+    public function getUserMemberships(int $userId, int $year= null): array
     {
         $user = new User($this->db, $this->profileFields, $userId);
         $usrId = $user->getValue('usr_id');
@@ -261,12 +245,17 @@ final class UserReadService
         }
 
         $roles = array();
-
+        $queryParams = array($userId);
         $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name, rol_cost
                 FROM ' . TBL_MEMBERS . '
                 LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id
                 WHERE mem_usr_id = ?';
-        $queryParams = array($userId);
+        if ($year !== null) {
+            $sql .= ' AND ((mem_begin IS NULL OR mem_begin <= ?) AND (mem_end IS NULL OR mem_end >= ?))';
+            $queryParams[] = $year . '-12-31';
+            $queryParams[] = $year . '-01-01';
+        }
+
         $memberStatement = $this->db->queryPrepared($sql, $queryParams);
       
         while ($row = $memberStatement->fetch()) {

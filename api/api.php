@@ -89,6 +89,10 @@ try {
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserMemberships($userId);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{year}')) {
+        $userId = (int) $router->getPathParam('userId');
+        $year = (int) $router->getPathParam('year');
+        $result = $Service->getUserMemberships($userId, $year);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
         $userId = (int) $router->getPathParam('userId');
         $memId = (int) $router->getPathParam('memId');
