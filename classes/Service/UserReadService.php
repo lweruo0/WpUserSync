@@ -230,6 +230,22 @@ final class UserReadService
     }
 
     /**
+     * GET /core/users/{userId}/next_memberships – get possible next memberships for user based on current memberships and role/list/org structure
+     */
+    public function getUserNextMemberships(int $userId): array
+    {
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
+
+        if ($usrId === 0) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
+        }
+
+
+    }
+
+
+    /**
      * GET /core/users/{userId}/memberships – Get all roles for user
      */
     public function getUserMemberships(int $userId): array
@@ -242,14 +258,21 @@ final class UserReadService
         }
 
         $roles = array();
-
-
         $memberships = $user->getRoleMemberships();
+
+        foreach ($memberships as $membership) {
+            $role = new Role($this->db, $membership);
+            $roles[] = array(
+                'rol_name' => $role->getValue('rol_name'),
+                'rol_id' => $role->getValue('mem_rol_id'),
+            );
+        }
+
 
         return array(
             'status' => 'success',
             'user_id' => $userId,
-            'data' => $memberships,
+            'data' => $roles,
         );
     }
 
