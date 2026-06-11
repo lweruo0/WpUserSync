@@ -320,18 +320,18 @@ final class UserReadService
         if (function_exists('list_members')) {
 
             // alle aktiven Mitglieder einlesen
-            /// $members = list_members($year, 
-            //                        array(
-            //                            'FIRST_NAME',
-            //                            'LAST_NAME',
-            //                            'BIRTHDAY',
-            //                            'GENDER'), 
-            //                        array('Mitglied' => $usrId), ' AND mem_id = '.$usrId. ' ');
+            $members = list_members($year, 
+                                    array(
+                                        'FIRST_NAME',
+                                        'LAST_NAME',
+                                        'BIRTHDAY',
+                                        'GENDER'), 
+                                    array('Mitglied' => $usrId), ' AND mem_id = '.$usrId. ' ');
 
             // Informationen aller Mitglieder zum Arbeitsdienst einslesen
             //$membersworkinfo = list_members_workinfo($members, 
             //                                        $year);
-            $members = 'Tes';
+            //$members = 'Tes';
 
         } else {
             $members = ' Arbeitsdienstinformationen können nicht eingelesen werden';
