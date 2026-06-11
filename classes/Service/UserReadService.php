@@ -13,21 +13,6 @@ use Admidio\Roles\Entity\RolesRights;
 define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 final class UserReadService
 {
     private Database $db;
