@@ -319,9 +319,6 @@ final class UserReadService
 
         if (function_exists('list_members')) {
 
-            $pPreferences = new ConfigTablePAD();
-            $pPreferences->read(); // Konfigurationsdaten auslesen
-
             // alle aktiven Mitglieder einlesen
             $members = list_members($year, 
                                     array(
@@ -335,9 +332,6 @@ final class UserReadService
             $membersworkinfo = list_members_workinfo($members, 
                                                     $datefilteractual);
 
-            // Information der Gesamtstunden
-            $sumworking = sum_working($membersworkinfo, 
-                                    $pPreferences->config['Stunden']['Kosten']);
 
         } else {
             $sumworking = ' Arbeitsdienstinformationen können nicht eingelesen werden';
