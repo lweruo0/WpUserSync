@@ -230,6 +230,31 @@ final class UserReadService
     }
 
     /**
+     * GET /core/users/{userId}/memberships – Get all roles for user
+     */
+    public function getUserMemberships(int $userId): array
+    {
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
+
+        if ($usrId === 0) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
+        }
+
+        $roles = array();
+
+
+        $memberships = $user->getRoleMemberships();
+
+        return array(
+            'status' => 'success',
+            'user_id' => $userId,
+            'data' => $memberships,
+        );
+    }
+
+
+    /**
      * GET /core/users/{userId}/lists – Get lists user is member of
      */
     public function getUserLists(int $userId): array
@@ -287,40 +312,6 @@ final class UserReadService
         ];
     }
 
-    /**
-     * GET /core/users/{userId}/memberships – Get all memberships
-     */
-    public function getUserMemberships(int $userId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT mem_id, mem_rol_id, mem_org_id, mem_begin, mem_end, rol_name, org_shortname 
-                FROM ' . TBL_MEMBERS . ' 
-                LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id 
-                LEFT JOIN ' . TBL_ORGANIZATIONS . ' ON mem_org_id = org_id 
-                WHERE mem_usr_id = ? 
-                ORDER BY mem_begin DESC';
-
-        $result = $this->db->queryPrepared($sql, [(int) $userId]);
-        $memberships = [];
-        while ($row = $result->fetch()) {
-            $memberships[] = [
-                'id' => (int) $row['mem_id'],
-                'roleId' => $row['mem_rol_id'] ? (int) $row['mem_rol_id'] : null,
-                'roleName' => $row['rol_name'] ? (string) $row['rol_name'] : null,
-                'orgId' => $row['mem_org_id'] ? (int) $row['mem_org_id'] : null,
-                'orgName' => $row['org_shortname'] ? (string) $row['org_shortname'] : null,
-                'beginDate' => (string) $row['mem_begin'],
-                'endDate' => (string) $row['mem_end'],
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'data' => $memberships,
-            'count' => count($memberships),
-        ];
-    }
 
     /**
      * GET /core/users/{userId}/memberships/{memId} – Get single membership
