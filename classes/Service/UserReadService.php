@@ -235,7 +235,7 @@ final class UserReadService
     /**
      * GET /core/users/{userId}/memberships – Get all roles for user
      */
-    public function getUserMemberships(int $userId, int $year= null): array
+    public function getUserMemberships(int $userId, ?int $year=null): array
     {
         $user = new User($this->db, $this->profileFields, $userId);
         $usrId = $user->getValue('usr_id');
