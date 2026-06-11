@@ -7,6 +7,7 @@ use Admidio\Infrastructure\Database;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Users\Entity\User;
 use Admidio\Roles\Entity\Role;
+use Admidio\Roles\Entity\Membership;
 use Admidio\Roles\Entity\RolesRights;
 
 final class UserReadService
@@ -262,11 +263,19 @@ final class UserReadService
         $roles = array();
         $memberships = $user->getRoleMemberships();
 
-        foreach ($memberships as $membership) {
-            $role = new Role($this->db, $membership);
+        foreach ($memberships as $rol_id) {
+
+            $m = new Membership($this->db, $rol_id);
+            $beginDate = $m->getValue('mem_begin', 'Y-m-d');
+            $endDate = $m->getValue('mem_end', 'Y-m-d');
+
+
+            $role = new Role($this->db, $rol_id);
             $roles[] = array(
                 'rol_name' => $role->getValue('rol_name'),
-                'rol_id' => $role->getValue('mem_rol_id'),
+                'rol_id' => $rol_id,
+                'beginDate' => $beginDate,
+                'endDate' => $endDate,
             );
         }
 
