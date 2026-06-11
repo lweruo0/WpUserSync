@@ -326,7 +326,7 @@ final class UserReadService
                                         'LAST_NAME',
                                         'BIRTHDAY',
                                         'GENDER'), 
-                                    array('Mitglied' => $usrId));
+                                    array('Mitglied' => $usrId), ' AND mem_id = '.$usrId. ' ');
 
             // Informationen aller Mitglieder zum Arbeitsdienst einslesen
             //$membersworkinfo = list_members_workinfo($members, 
