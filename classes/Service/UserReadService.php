@@ -10,7 +10,7 @@ use Admidio\Roles\Entity\Role;
 use Admidio\Roles\Entity\Membership;
 use Admidio\Roles\Entity\RolesRights;
 
-TBL_USER_ARBEITSDIENST = 'adm_user_arbeitsdienst';
+const TBL_USER_ARBEITSDIENST = 'adm_user_arbeitsdienst';
 
 
 final class UserReadService
@@ -307,7 +307,6 @@ final class UserReadService
         $memberStatement = $this->db->queryPrepared($sql, $queryParams);
       
         while ($row = $memberStatement->fetch()) {
-            $role = new Role($this->db, $row['mem_rol_id']);
             $roles[] = [
                 'pad_id' => (int) $row['pad_id'],
                 'pad_user_id' => (string) $row['pad_user_id'],
