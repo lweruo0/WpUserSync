@@ -262,29 +262,25 @@ final class UserReadService
 
         $roles = array();
 
-        $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name
+        $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name, rol_cost
                 FROM ' . TBL_MEMBERS . '
                 LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id
                 WHERE mem_usr_id = ?';
         $queryParams = array($userId);
         $memberStatement = $this->db->queryPrepared($sql, $queryParams);
-
-        
+      
         while ($row = $memberStatement->fetch()) {
             $role = new Role($this->db, $row['mem_rol_id']);
             $roles[] = [
                 'mem_id' => (int) $row['mem_id'],
                 'mem_rol_id' => (string) $row['mem_rol_id'],
                 'rol_name' => (string) $row['rol_name'],
+                'rol_cost' => (string) $row['rol_cost'],
+
                 'mem_begin' => (string) ($row['mem_begin'] ?? ''),
                 'mem_end' => (string) ($row['mem_end'] ?? ''),
             ];
         }   
-
-
-
-  
-
 
         return array(
             'status' => 'success',
