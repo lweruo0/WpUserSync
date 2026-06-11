@@ -349,6 +349,7 @@ final class UserReadService
             'status' => 'success',
             'user_id' => $userId,
             'data' => $roles,
+            'sumworking' => $sumworking
         );
     }
 
