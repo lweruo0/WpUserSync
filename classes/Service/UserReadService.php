@@ -12,6 +12,22 @@ use Admidio\Roles\Entity\RolesRights;
 
 define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 final class UserReadService
 {
     private Database $db;
@@ -314,6 +330,35 @@ final class UserReadService
                 'pad_date' => (string) ($row['pad_date'] ?? ''),
             ];
         }   
+
+
+        if (function_exists('list_members')) {
+
+
+            // alle aktiven Mitglieder einlesen
+            $members = list_members($year, 
+                                    array(
+                                        'FIRST_NAME',
+                                        'LAST_NAME',
+                                        'BIRTHDAY',
+                                        'GENDER'), 
+                                    array('Mitglied' => $usrId));
+
+            // Informationen aller Mitglieder zum Arbeitsdienst einslesen
+            $membersworkinfo = list_members_workinfo($members, 
+                                                    $datefilteractual);
+
+            // Information der Gesamtstunden
+            $sumworking = sum_working($membersworkinfo, 
+                                    $pPreferences->config['Stunden']['Kosten']);
+
+        } else {
+            $sumworking = ' Arbeitsdienstinformationen können nicht eingelesen werden';
+            // Arbeitsdienstinformationen können nicht eingelesen werden, da die Funktionen aus dem Arbeitsdienstplugin nicht verfügbar sind
+        }
+
+
+
 
         return array(
             'status' => 'success',

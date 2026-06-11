@@ -10,6 +10,8 @@ $pluginDir = __DIR__;
 $pluginsDir = dirname($pluginDir);
 $admidioRoot = dirname($pluginsDir);
 
+
+
 $pathsToTry = array(
     $admidioRoot . '/adm_program/system/common.php',
     $admidioRoot . '/system/common.php'
