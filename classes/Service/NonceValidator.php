@@ -66,7 +66,7 @@ final class NonceValidator
 
         $age = time() - (int) $timestamp;
         if ($age < 0 || $age > $maxAgeSeconds) {
-            throw new ApiException('API nonce expired.', 'nonce_expired '.$age, 401);
+            throw new ApiException('API nonce expired.', 'nonce_expired '.$timestamp. ' '. time(), 402);
         }
 
         self::assertNonceUnused($clientId, $nonce, $timestamp, $maxAgeSeconds);
