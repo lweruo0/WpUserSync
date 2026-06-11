@@ -39,16 +39,16 @@ final class UserReadService
     }
 
     /**
-     * GET /core/roles – List all roles
+     * GET /core/categories – List all categories
      */
-    public function listRoleCategories(): array
+    public function listCategories($type = null): array
     {
-        // read information about the roles
+        $Condition = $type !== null ? ' WHERE cat_type = ?' : '';
+        // read information about the categories
         $sql = 'SELECT cat_id, cat_org_id, cat_name_intern, cat_uuid
-            FROM ' . TBL_CATEGORIES . '
-            WHERE cat_type = \'ROLE\'';
+            FROM ' . TBL_CATEGORIES . $Condition;
 
-        $rolesStatement = $this->db->queryPrepared($sql);
+        $rolesStatement = $this->db->queryPrepared($sql, $type !== null ? [(string) $type] : []);
         $rolesData = $rolesStatement->fetchAll();   
     }
 

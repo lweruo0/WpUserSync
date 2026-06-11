@@ -53,7 +53,14 @@ try {
 
     $result = null;
     $router = new ApiRouter();
-    if ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users')) {
+    if ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/categories')) {
+        $result = $Service->listCategories();
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/categories/{type}')) {
+        $type = (string) $router->getPathParam('type');
+        $result = $Service->listCategories($type);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/roles')) {
+        $result = $Service->listRoles();
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users')) {
         $result = $Service->listUsers();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}')) {
         $userId = (int) $router->getPathParam('userId');
