@@ -6,6 +6,8 @@ namespace WpUserSync\classes\Service;
 use Admidio\Infrastructure\Database;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Users\Entity\User;
+use Admidio\Roles\Entity\Role;
+use Admidio\Roles\Entity\RolesRights;
 
 final class UserReadService
 {
