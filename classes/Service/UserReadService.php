@@ -261,23 +261,29 @@ final class UserReadService
         }
 
         $roles = array();
-        $memberships = $user->getRoleMemberships();
 
-        foreach ($memberships as $rol_id) {
+        $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name
+                FROM ' . TBL_MEMBERS . '
+                LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id
+                WHERE mem_usr_id = ?';
+        $queryParams = array($userId);
+        $memberStatement = $this->db->queryPrepared($sql, $queryParams);
 
-            $m = new Membership($this->db, $rol_id);
-            $beginDate = $m->getValue('mem_begin', 'Y-m-d');
-            $endDate = $m->getValue('mem_end', 'Y-m-d');
+        
+        while ($row = $memberStatement->fetch()) {
+            $role = new Role($this->db, $row['mem_rol_id']);
+            $roles[] = [
+                'mem_id' => (int) $row['mem_id'],
+                'mem_rol_id' => (string) $row['mem_rol_id'],
+                'rol_name' => (string) $row['rol_name'],
+                'mem_begin' => (string) ($row['mem_begin'] ?? ''),
+                'mem_end' => (string) ($row['mem_end'] ?? ''),
+            ];
+        }   
 
 
-            $role = new Role($this->db, $rol_id);
-            $roles[] = array(
-                'rol_name' => $role->getValue('rol_name'),
-                'rol_id' => $rol_id,
-                'beginDate' => $beginDate,
-                'endDate' => $endDate,
-            );
-        }
+
+  
 
 
         return array(
