@@ -319,6 +319,8 @@ final class UserReadService
 
         if (function_exists('list_members')) {
 
+            $pPreferences = new ConfigTablePAD();
+            $pPreferences->read(); // Konfigurationsdaten auslesen
 
             // alle aktiven Mitglieder einlesen
             $members = list_members($year, 
