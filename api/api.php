@@ -93,6 +93,13 @@ try {
         $userId = (int) $router->getPathParam('userId');
         $year = (int) $router->getPathParam('year');
         $result = $Service->getUserMemberships($userId, $year);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst')) {
+        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->getUserArbeitsdienst($userId);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst/{year}')) {
+        $userId = (int) $router->getPathParam('userId');
+        $year = (int) $router->getPathParam('year');
+        $result = $Service->getUserArbeitsdienst($userId, $year);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
         $userId = (int) $router->getPathParam('userId');
         $memId = (int) $router->getPathParam('memId');

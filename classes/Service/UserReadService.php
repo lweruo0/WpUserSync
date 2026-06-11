@@ -10,6 +10,9 @@ use Admidio\Roles\Entity\Role;
 use Admidio\Roles\Entity\Membership;
 use Admidio\Roles\Entity\RolesRights;
 
+TBL_USER_ARBEITSDIENST = 'adm_user_arbeitsdienst';
+
+
 final class UserReadService
 {
     private Database $db;
@@ -277,6 +280,50 @@ final class UserReadService
             'data' => $roles,
         );
     }
+
+    /**
+     * GET /core/users/{userId}/arbeitsdienst – Get all roles for user
+     */
+    public function getUserArbeitsdienst(int $userId, ?int $year=null): array
+    {
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
+
+        if ($usrId === 0) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
+        }
+
+        $roles = array();
+        $queryParams = array($userId);
+        $sql = 'SELECT pad_id, pad_user_id, pad_date, pad_name, pad_hours
+                FROM ' . TBL_USER_ARBEITSDIENST . '
+                WHERE pad_user_id = ?';
+        if ($year !== null) {
+            $sql .= ' AND ((pad_date IS NULL OR pad_date <= ?) AND (pad_date IS NULL OR pad_date >= ?))';
+            $queryParams[] = $year . '-12-31';
+            $queryParams[] = $year . '-01-01';
+        }
+
+        $memberStatement = $this->db->queryPrepared($sql, $queryParams);
+      
+        while ($row = $memberStatement->fetch()) {
+            $role = new Role($this->db, $row['mem_rol_id']);
+            $roles[] = [
+                'pad_id' => (int) $row['pad_id'],
+                'pad_user_id' => (string) $row['pad_user_id'],
+                'pad_name' => (string) $row['pad_name'],
+                'pad_hours' => (string) $row['pad_hours'],
+                'pad_date' => (string) ($row['pad_date'] ?? ''),
+            ];
+        }   
+
+        return array(
+            'status' => 'success',
+            'user_id' => $userId,
+            'data' => $roles,
+        );
+    }
+
 
 
     /**
