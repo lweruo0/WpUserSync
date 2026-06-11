@@ -30,12 +30,26 @@ final class UserReadService
      */
     public function listRoles(): array
     {
+        $limit = min((int) ($query['limit'] ?? 50), 500);
+        $offset = max(0, (int) ($query['offset'] ?? 0));
+
         // read information about the roles
         $sql = 'SELECT rol_id, rol_name, rol_valid, rol_uuid, rol_cat_id
             FROM ' . TBL_ROLES . '
             WHERE rol_valid = true';
+        $sql .= ' ORDER BY rol_id LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
         $rolesStatement = $this->db->queryPrepared($sql);
-        $rolesData = $rolesStatement->fetchAll();   
+        $rolesData = $rolesStatement->fetchAll();
+        
+        return [
+            'status' => 'success',
+            'data' => $rolesData,
+            'count' => count($rolesData),
+            'offset' => $offset,
+            'limit' => $limit,
+        ];
+
     }
 
     /**
@@ -43,13 +57,26 @@ final class UserReadService
      */
     public function listCategories($type = null): array
     {
+        $limit = min((int) ($query['limit'] ?? 50), 500);
+        $offset = max(0, (int) ($query['offset'] ?? 0));
+
         $Condition = $type !== null ? ' WHERE cat_type = ?' : '';
         // read information about the categories
         $sql = 'SELECT cat_id, cat_org_id, cat_name_intern, cat_uuid
             FROM ' . TBL_CATEGORIES . $Condition;
 
+        $sql .= ' ORDER BY cat_id LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+
+
         $rolesStatement = $this->db->queryPrepared($sql, $type !== null ? [(string) $type] : []);
         $rolesData = $rolesStatement->fetchAll();   
+        return [
+            'status' => 'success',
+            'data' => $rolesData,
+            'count' => count($rolesData),
+            'offset' => $offset,
+            'limit' => $limit,
+        ];
     }
 
 
