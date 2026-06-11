@@ -10,8 +10,7 @@ use Admidio\Roles\Entity\Role;
 use Admidio\Roles\Entity\Membership;
 use Admidio\Roles\Entity\RolesRights;
 
-const TBL_USER_ARBEITSDIENST = 'adm_user_arbeitsdienst';
-
+define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
 
 final class UserReadService
 {
