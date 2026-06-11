@@ -330,7 +330,7 @@ final class UserReadService
 
             // Informationen aller Mitglieder zum Arbeitsdienst einslesen
             $membersworkinfo = list_members_workinfo($members, 
-                                                    $datefilteractual);
+                                                    $year);
 
 
         } else {
