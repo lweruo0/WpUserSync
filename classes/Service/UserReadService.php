@@ -334,7 +334,7 @@ final class UserReadService
 
 
         } else {
-            $sumworking = ' Arbeitsdienstinformationen können nicht eingelesen werden';
+            $membersworkinfo = ' Arbeitsdienstinformationen können nicht eingelesen werden';
             // Arbeitsdienstinformationen können nicht eingelesen werden, da die Funktionen aus dem Arbeitsdienstplugin nicht verfügbar sind
         }
 
@@ -345,7 +345,7 @@ final class UserReadService
             'status' => 'success',
             'user_id' => $userId,
             'data' => $roles,
-            'sumworking' => $sumworking
+            'sumworking' => $membersworkinfo
         );
     }
 
