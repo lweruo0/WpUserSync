@@ -111,11 +111,11 @@ final class UserReadService
         $users = [];
         while ($row = $result->fetch()) {
             $users[] = [
-                'id' => (int) $row['usr_id'],
-                'login' => (string) $row['usr_login_name'],
-                'firstName' => (string) ($row['first_name'] ?? ''),
-                'lastName' => (string) ($row['last_name'] ?? ''),
-                'birthday' => (string) ($row['birthday'] ?? ''),
+                'usr_id' => (int) $row['usr_id'],
+                'usr_login_name' => (string) $row['usr_login_name'],
+                'FIRST_NAME' => (string) ($row['first_name'] ?? ''),
+                'LAST_NAME' => (string) ($row['last_name'] ?? ''),
+                'BIRTHDAY' => (string) ($row['birthday'] ?? ''),
             ];
         }
 
@@ -140,16 +140,14 @@ final class UserReadService
             throw new ApiException('User not found.', 'user_not_found', 404);
         }
 
-        $profile = array();
-
-        foreach ($this->existingFieldNames as $fieldName) {
-            $profile[$fieldName] = $user->getValue($fieldName, 'database');
-        }
-
         return array(
             'status' => 'success',
-            'user_id' => $userId,
-            'profile' => $profile,
+            'usr_id' => $userId,
+            'data' => array('usr_id' => usrId,
+                            'usr_login_name' => $user->getValue('usr_login_name', 'database'),
+                            'FIRST_NAME' => $user->getValue('FIRST_NAME', 'database'),
+                            'LAST_NAME' => $user->getValue('LAST_NAME', 'database'),
+                            'BIRTHDAY' => $user->getValue('BIRTHDAY', 'database')),
         );
     }
 
@@ -161,24 +159,24 @@ final class UserReadService
      */
     public function getUserFields(int $userId): array
     {
-        $this->assertUserExists($userId);
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
 
-        $sql = 'SELECT * FROM ' . TBL_USER_FIELDS . ' WHERE uff_usr_id = ? ORDER BY uff_name';
-        $result = $this->db->queryPrepared($sql, [(int) $userId]);
-
-        $fields = [];
-        while ($row = $result->fetch()) {
-            $fields[] = [
-                'name' => (string) $row['uff_name'],
-                'value' => (string) $row['uff_value'],
-            ];
+        if ($usrId === 0) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
         }
 
-        return [
+        $fields = array();
+
+        foreach ($this->existingFieldNames as $fieldName) {
+            $fields[$fieldName] = $user->getValue($fieldName, 'database');
+        }
+
+        return array(
             'status' => 'success',
+            'user_id' => $userId,
             'data' => $fields,
-            'count' => count($fields),
-        ];
+        );
     }
 
     /**
@@ -186,23 +184,22 @@ final class UserReadService
      */
     public function getUserField(int $userId, string $name): array
     {
-        $this->assertUserExists($userId);
+        $user = new User($this->db, $this->profileFields, $userId);
+        $usrId = $user->getValue('usr_id');
 
-        $sql = 'SELECT uff_value FROM ' . TBL_USER_FIELDS . ' WHERE uff_usr_id = ? AND uff_name = ?';
-        $result = $this->db->queryPrepared($sql, [(int) $userId, $name]);
-        $row = $result->fetch();
-
-        if (!$row) {
-            throw new ApiException('Field not found.', 'field_not_found', 404);
+        if ($usrId === 0) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
         }
 
-        return [
+        if (!in_array($name, $this->existingFieldNames)){
+            throw new ApiException('Fieldname not found.', 'field_not_found', 404);            
+        }
+
+        return array(
             'status' => 'success',
-            'data' => [
-                'name' => $name,
-                'value' => (string) $row['uff_value'],
-            ],
-        ];
+            'user_id' => $userId,
+            'data' => $user->getValue($name, 'database'),
+        );
     }
 
     /**
