@@ -329,12 +329,11 @@ final class UserReadService
                                     array('Mitglied' => $usrId), ' AND mem.mem_usr_id = '.$usrId. ' ');
 
             // Informationen aller Mitglieder zum Arbeitsdienst einslesen
-            //$membersworkinfo = list_members_workinfo($members, 
-            //                                        $year);
-            //$members = 'Tes';
+            $membersworkinfo = list_members_workinfo($members, 
+                                                    $year);
 
         } else {
-            $members = ' Arbeitsdienstinformationen können nicht eingelesen werden';
+            $membersworkinfo = ' Arbeitsdienstinformationen können nicht eingelesen werden';
             // Arbeitsdienstinformationen können nicht eingelesen werden, da die Funktionen aus dem Arbeitsdienstplugin nicht verfügbar sind
         }
 
@@ -345,7 +344,7 @@ final class UserReadService
             'status' => 'success',
             'user_id' => $userId,
             'data' => $roles,
-            'sumworking' => $members
+            'sumworking' => $membersworkinfo
         );
     }
 
