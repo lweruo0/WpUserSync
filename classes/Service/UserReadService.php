@@ -166,21 +166,10 @@ final class UserReadService
      */
     public function getUser(int $userId): array
     {
-        $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
-
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
-
+        $this->assertUserExists($userId);
         return array(
             'status' => 'success',
             'usr_id' => $userId,
-            'data' => array('usr_id' => usrId,
-                            'usr_login_name' => $user->getValue('usr_login_name', 'database'),
-                            'FIRST_NAME' => $user->getValue('FIRST_NAME', 'database'),
-                            'LAST_NAME' => $user->getValue('LAST_NAME', 'database'),
-                            'BIRTHDAY' => $user->getValue('BIRTHDAY', 'database')),
         );
     }
 
@@ -192,12 +181,9 @@ final class UserReadService
      */
     public function getUserFields(int $userId): array
     {
-        $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
+        $this->assertUserExists($userId);
 
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
+        $user = new User($this->db, $this->profileFields, $userId);
 
         $fields = array();
 
@@ -217,12 +203,9 @@ final class UserReadService
      */
     public function getUserField(int $userId, string $name): array
     {
-        $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
+        $this->assertUserExists($userId);
 
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
+        $user = new User($this->db, $this->profileFields, $userId);
 
         if (!in_array($name, $this->existingFieldNames)){
             throw new ApiException('Fieldname not found.', 'field_not_found', 404);            
@@ -240,12 +223,8 @@ final class UserReadService
      */
     public function getUserMemberships(int $userId, ?int $year=null): array
     {
+        $this->assertUserExists($userId);
         $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
-
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
 
         $roles = array();
         $queryParams = array($userId);
@@ -286,12 +265,8 @@ final class UserReadService
      */
     public function getUserArbeitsdienst(int $userId, ?int $year=null): array
     {
+        $this->assertUserExists($userId);
         $user = new User($this->db, $this->profileFields, $userId);
-        $usrId = $user->getValue('usr_id');
-
-        if ($usrId === 0) {
-            throw new ApiException('User not found.', 'user_not_found', 404);
-        }
 
         $roles = array();
         $queryParams = array($userId);
@@ -326,7 +301,7 @@ final class UserReadService
                                         'LAST_NAME',
                                         'BIRTHDAY',
                                         'GENDER'), 
-                                    array('Mitglied' => $usrId), ' AND mem.mem_usr_id = '.$usrId. ' ');
+                                    array('Mitglied' => $userId), ' AND mem.mem_usr_id = '.$userId. ' ');
 
             // Informationen aller Mitglieder zum Arbeitsdienst einslesen
             $membersworkinfo = list_members_workinfo($members, 
@@ -337,176 +312,12 @@ final class UserReadService
             // Arbeitsdienstinformationen können nicht eingelesen werden, da die Funktionen aus dem Arbeitsdienstplugin nicht verfügbar sind
         }
 
-
-
-
         return array(
             'status' => 'success',
             'user_id' => $userId,
             'data' => $roles,
             'sumworking' => $membersworkinfo
         );
-    }
-
-
-
-    /**
-     * GET /core/users/{userId}/lists – Get lists user is member of
-     */
-    public function getUserLists(int $userId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT DISTINCT lst_id, lst_name 
-                FROM ' . TBL_LISTS . ' 
-                INNER JOIN ' . TBL_LIST_MEMBERS . ' ON lsm_lst_id = lst_id 
-                WHERE lsm_usr_id = ? 
-                ORDER BY lst_name';
-
-        $result = $this->db->queryPrepared($sql, [(int) $userId]);
-        $lists = [];
-        while ($row = $result->fetch()) {
-            $lists[] = [
-                'id' => (int) $row['lst_id'],
-                'name' => (string) $row['lst_name'],
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'data' => $lists,
-            'count' => count($lists),
-        ];
-    }
-
-    /**
-     * GET /core/users/{userId}/lists/{listId} – Get list details
-     */
-    public function getUserList(int $userId, int $listId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT lst_id, lst_name, lst_description 
-                FROM ' . TBL_LISTS . ' 
-                INNER JOIN ' . TBL_LIST_MEMBERS . ' ON lsm_lst_id = lst_id 
-                WHERE lst_id = ? AND lsm_usr_id = ?';
-
-        $result = $this->db->queryPrepared($sql, [(int) $listId, (int) $userId]);
-        $row = $result->fetch();
-
-        if (!$row) {
-            throw new ApiException('List membership not found.', 'list_not_found', 404);
-        }
-
-        return [
-            'status' => 'success',
-            'data' => [
-                'id' => (int) $row['lst_id'],
-                'name' => (string) $row['lst_name'],
-                'description' => (string) ($row['lst_description'] ?? ''),
-            ],
-        ];
-    }
-
-
-    /**
-     * GET /core/users/{userId}/memberships/{memId} – Get single membership
-     */
-    public function getUserMembership(int $userId, int $memId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT mem_id, mem_rol_id, mem_org_id, mem_begin, mem_end, rol_name, org_shortname 
-                FROM ' . TBL_MEMBERS . ' 
-                LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id 
-                LEFT JOIN ' . TBL_ORGANIZATIONS . ' ON mem_org_id = org_id 
-                WHERE mem_id = ? AND mem_usr_id = ?';
-
-        $result = $this->db->queryPrepared($sql, [(int) $memId, (int) $userId]);
-        $row = $result->fetch();
-
-        if (!$row) {
-            throw new ApiException('Membership not found.', 'membership_not_found', 404);
-        }
-
-        return [
-            'status' => 'success',
-            'data' => [
-                'id' => (int) $row['mem_id'],
-                'roleId' => $row['mem_rol_id'] ? (int) $row['mem_rol_id'] : null,
-                'roleName' => $row['rol_name'] ? (string) $row['rol_name'] : null,
-                'orgId' => $row['mem_org_id'] ? (int) $row['mem_org_id'] : null,
-                'orgName' => $row['org_shortname'] ? (string) $row['org_shortname'] : null,
-                'beginDate' => (string) $row['mem_begin'],
-                'endDate' => (string) $row['mem_end'],
-            ],
-        ];
-    }
-
-    /**
-     * GET /core/users/{userId}/memberships/role/{roleId} – Get memberships for role
-     */
-    public function getUserMembershipsForRole(int $userId, int $roleId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT mem_id, mem_org_id, mem_begin, mem_end, org_shortname 
-                FROM ' . TBL_MEMBERS . ' 
-                LEFT JOIN ' . TBL_ORGANIZATIONS . ' ON mem_org_id = org_id 
-                WHERE mem_usr_id = ? AND mem_rol_id = ? 
-                ORDER BY mem_begin DESC';
-
-        $result = $this->db->queryPrepared($sql, [(int) $userId, (int) $roleId]);
-        $memberships = [];
-        while ($row = $result->fetch()) {
-            $memberships[] = [
-                'id' => (int) $row['mem_id'],
-                'roleId' => $roleId,
-                'orgId' => $row['mem_org_id'] ? (int) $row['mem_org_id'] : null,
-                'orgName' => $row['org_shortname'] ? (string) $row['org_shortname'] : null,
-                'beginDate' => (string) $row['mem_begin'],
-                'endDate' => (string) $row['mem_end'],
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'data' => $memberships,
-            'count' => count($memberships),
-        ];
-    }
-
-    /**
-     * GET /core/users/{userId}/memberships/organization/{orgId} – Get memberships for org
-     */
-    public function getUserMembershipsForOrg(int $userId, int $orgId): array
-    {
-        $this->assertUserExists($userId);
-
-        $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name 
-                FROM ' . TBL_MEMBERS . ' 
-                LEFT JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id 
-                WHERE mem_usr_id = ? AND mem_org_id = ? 
-                ORDER BY mem_begin DESC';
-
-        $result = $this->db->queryPrepared($sql, [(int) $userId, (int) $orgId]);
-        $memberships = [];
-        while ($row = $result->fetch()) {
-            $memberships[] = [
-                'id' => (int) $row['mem_id'],
-                'roleId' => $row['mem_rol_id'] ? (int) $row['mem_rol_id'] : null,
-                'roleName' => $row['rol_name'] ? (string) $row['rol_name'] : null,
-                'orgId' => $orgId,
-                'beginDate' => (string) $row['mem_begin'],
-                'endDate' => (string) $row['mem_end'],
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'data' => $memberships,
-            'count' => count($memberships),
-        ];
     }
 
     private function assertUserExists(int $userId): void
@@ -517,41 +328,5 @@ final class UserReadService
             throw new ApiException('User not found.', 'user_not_found', 404);
         }
     }
-
-    public function findUserIdbyFirstnameLastnameBirthday(string $firstName, string $lastName, string $birthday): ?int
-    {
-        // search for existing user with same name and read user data
-        $sql = 'SELECT MAX(usr_id) AS usr_id
-                  FROM '.TBL_USERS.'
-            INNER JOIN '.TBL_USER_DATA.' AS last_name
-                    ON last_name.usd_usr_id = usr_id
-                   AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
-                   AND last_name.usd_value  = ? -- $user->getValue(\'LAST_NAME\', \'database\')
-            INNER JOIN '.TBL_USER_DATA.' AS birthday
-                    ON birthday.usd_usr_id = usr_id
-                   AND birthday.usd_usf_id = ? -- $gProfileFields->getProperty(\'BIRTHDAY\', \'usf_id\')
-                   AND birthday.usd_value  = ? -- $user->getValue(\'BIRTHDAY\', \'database\')
-            INNER JOIN '.TBL_USER_DATA.' AS first_name
-                    ON first_name.usd_usr_id = usr_id
-                   AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
-                   AND first_name.usd_value  = ? -- $user->getValue(\'FIRST_NAME\', \'database\')
-                 WHERE usr_valid = true';
-        $queryParams = array(
-            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
-            $lastName,
-            $this->profileFields->getProperty('BIRTHDAY', 'usf_id'),
-            $birthday,
-            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
-            $firstName
-        );
-        $pdoStatement = $this->db->queryPrepared($sql, $queryParams);
-        $maxUserId = (int) $pdoStatement->fetchColumn();
-
-        return $maxUserId > 0 ? $maxUserId : null;
-    }
-
-
-
-
 
 }

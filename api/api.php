@@ -68,24 +68,10 @@ try {
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserFields($userId);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->setUserField($userId);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
         $userId = (int) $router->getPathParam('userId');
         $name = (string) $router->getPathParam('name');
         $result = $Service->getUserField($userId, $name);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $name = (string) $router->getPathParam('name');
-        $result = $Service->setUserFieldByName($userId, $name);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/lists')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->getUserLists($userId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/lists/{listId}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $listId = (int) $router->getPathParam('listId');
-        $result = $Service->getUserList($userId, $listId);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->getUserMemberships($userId);
@@ -100,30 +86,18 @@ try {
         $userId = (int) $router->getPathParam('userId');
         $year = (int) $router->getPathParam('year');
         $result = $Service->getUserArbeitsdienst($userId, $year);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
         $userId = (int) $router->getPathParam('userId');
-        $memId = (int) $router->getPathParam('memId');
-        $result = $Service->getUserMembership($userId, $memId);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{memId}')) {
+        $result = $Service->setUserField($userId);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
         $userId = (int) $router->getPathParam('userId');
-        $memId = (int) $router->getPathParam('memId');
-        $result = $Service->updateMembership($userId, $memId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
+        $name = (string) $router->getPathParam('name');
+        $result = $Service->setUserFieldByName($userId, $name);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{year}')) {
         $userId = (int) $router->getPathParam('userId');
-        $roleId = (int) $router->getPathParam('roleId');
-        $result = $Service->getUserMembershipsForRole($userId, $roleId);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/role/{roleId}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $roleId = (int) $router->getPathParam('roleId');
-        $result = $Service->createMembershipForRole($userId, $roleId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $orgId = (int) $router->getPathParam('orgId');
-        $result = $Service->getUserMembershipsForOrg($userId, $orgId);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/organization/{orgId}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $orgId = (int) $router->getPathParam('orgId');
-        $result = $Service->createMembershipForOrg($userId, $orgId);
+        $year = (int) $router->getPathParam('year');
+        $result = $Service->setUserMemberships($userId, $year);
+
     } else {
         throw new ApiException('Endpoint not found.', 'not_found', 404);
     }
