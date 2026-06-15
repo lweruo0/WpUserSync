@@ -7,17 +7,26 @@ use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Infrastructure\Database;
 
 
+define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
+
 final class UserWriteService
 {
     private Database $db;
     private ProfileFields $profileFields;
     private array $query;
     private array $payload;
+    private int $gCurrentOrgId;
+    private Database $gDb;
 
+
+    
     public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
+        $this->gCurrentOrgId= $GLOBALS['gCurrentOrgId'];
+        $this->gProfileFields = $GLOBALS['gProfileFields'];
+        $this->gDb = $GLOBALS['gDb'];
         $this->query = $query;
         $this->payload = $payload;
     }
@@ -38,7 +47,6 @@ final class UserWriteService
 
         $resultdata = [];
         foreach ($payload['data'] as $fieldName => $value) {
-
             if ( $user->setValue($fieldName, $value)){
                 $resultdata[$fieldName] =  $value;
             }   
@@ -81,6 +89,82 @@ final class UserWriteService
             'data' => [
                 'name' => $name,
                 'value' => $value,
+            ],
+        ];
+    }
+
+    /**
+     * POST /core/users/{userId}/arbeitsdienst/{year} – Set a custom field by name
+     */
+    public function setUserArbeitsdienst(int $userId, int $year): array
+    {
+        $payload = $this->payload;
+        $this->assertUserExists($userId);
+
+        $data = $payload['data'] ?? array();
+        
+        if (empty($payload['data'])) {
+            throw new ApiException('Data is required.', 'validation_failed', 422);
+        }
+
+        if ($year === 0) {
+            throw new ApiException('Year is required.', 'validation_failed', 422);
+        }
+
+        // Get or create category for the year
+        $sql = 'SELECT cat_id FROM ' . TBL_CATEGORIES . ' 
+            WHERE cat_name = ? AND cat_type = ? AND cat_org_id = ?';
+        $stmt = $this->db->queryPrepared($sql, [(string) $year, 'ADC', (int) $this->gCurrentOrgId]);
+        $result = $stmt->fetch();
+        $categoryid = $result['cat_id'] ?? null;
+        
+        if (!$categoryid) {
+            $category = new Category($this->db);
+            $category->setValue('cat_name', (string) $year);
+            $category->setValue('cat_type', 'ADC');
+            $category->setValue('cat_org_id', (int) $this->gCurrentOrgId);
+            $category->save();
+            $categoryid = $category->getId();
+        } 
+
+        # TABELLE TBL_USER_ARBEITSDIENST
+        # pad_id, pad_org_id, pad_user_id, pad_date, pad_cat_id, pad_pro_id, pad_name, pad_hours
+
+        $pro_id = $data['pro_id'] ?? 0;
+        $date = $data['date'] ?? date('Y-m-d');
+        $name = $data['name'] ?? 'Arbeitsdienstbezeichung';
+        $hours = $data['hours'] ?? 0;
+        $ad_id = $data['id'] ?? null;
+
+
+        if (!empty($ad_id)) {
+            $sql = 'UPDATE ' . TBL_USER_ARBEITSDIENST . '
+                    SET pad_cat_id = ? , 
+                        pad_pro_id = ? , 
+                        pad_date = ? , 
+                        pad_name = ? , 
+                        pad_hours = ?
+                    WHERE pad_id = ?';
+            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $ad_id]);
+            $stmt->execute();
+
+        } else {
+            $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
+                    ( pad_org_id, pad_user_id, pad_cat_id, pad_pro_id, pad_date, pad_name, pad_hours)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)';
+            $stmt = $this->db->queryPrepared($sql, [(int) $this->gCurrentOrgId, 
+                                                    $userId,
+                                                    $categoryid,
+                                                    $pro_id, 
+                                                    $date, 
+                                                    $name, 
+                                                    $hours]);
+            $stmt->execute();               
+        }
+        return [
+            'status' => 'success',
+            'data' => [
+
             ],
         ];
     }

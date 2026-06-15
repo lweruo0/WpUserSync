@@ -97,7 +97,10 @@ try {
         $userId = (int) $router->getPathParam('userId');
         $year = (int) $router->getPathParam('year');
         $result = $Service->setUserMemberships($userId, $year);
-
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst/{year}')) {
+        $userId = (int) $router->getPathParam('userId');
+        $year = (int) $router->getPathParam('year');
+        $result = $Service->setUserArbeitsdienst($userId, $year);
     } else {
         throw new ApiException('Endpoint not found.', 'not_found', 404);
     }
