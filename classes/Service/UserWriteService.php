@@ -38,10 +38,10 @@ final class UserWriteService
 
         $resultdata = [];
         foreach ($payload['data'] as $fieldName => $value) {
-            if ($this->profileFields->getProperty($fieldName)) {
-                $user->setValue($fieldName, $value);
+
+            if ( $user->setValue($fieldName, $value)){
                 $resultdata[$fieldName] =  $value;
-            }
+            }   
         }   
 
         $user->saveChangesWithoutRights();
@@ -72,12 +72,7 @@ final class UserWriteService
         }
 
         $user = new User($this->db, $this->profileFields, $userId);
-        if ($this->profileFields->getProperty($name)) {
-            $user->setValue($name, $value);
-        } else {
-            throw new ApiException('Field name is invalid.', 'validation_failed', 422);
-        }     
-
+        $user->setValue($name, $value);
         $user->saveChangesWithoutRights();
         $user->save();
 
