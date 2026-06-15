@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
+use Admidio\Users\Entity\User;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Infrastructure\Database;
+
 
 final class UserWriteService
 {
@@ -21,41 +23,33 @@ final class UserWriteService
     }
 
     /**
-     * POST /core/users/{userId}/fields – Set or create a custom field
+     * POST /core/users/{userId}/fields – set multiple custom fields
      */
     public function setUserField(int $userId): array
     {
         $payload = $this->payload;
         $this->assertUserExists($userId);
 
-        $name = (string) ($payload['name'] ?? '');
-        $value = (string) ($payload['value'] ?? '');
+        $user = new User($this->db, $this->profileFields, $userId);
 
-        if ($name === '') {
-            throw new ApiException('Field name is required.', 'validation_failed', 422);
+        if (!is_array($payload['data'] ?? null)) {
+            throw new ApiException('data value must be an array.', 'validation_failed', 422);
         }
 
-        $sql = 'SELECT uff_id FROM ' . TBL_USER_FIELDS . ' WHERE uff_usr_id = ? AND uff_name = ?';
-        $result = $this->db->queryPrepared($sql, [(int) $userId, $name]);
-        $existing = $result->fetch();
+        $resultdata = [];
+        foreach ($payload['data'] as $fieldName => $value) {
+            if ($this->profileFields->hasProperty($fieldName)) {
+                $user->setValue($fieldName, $value);
+                $resultdata[$fieldName] =  $value;
+            }
+        }   
 
-        if ($existing) {
-            $sql = 'UPDATE ' . TBL_USER_FIELDS . ' SET uff_value = ? WHERE uff_usr_id = ? AND uff_name = ?';
-            $this->db->queryPrepared($sql, [$value, (int) $userId, $name]);
-            $status = 'updated';
-        } else {
-            $sql = 'INSERT INTO ' . TBL_USER_FIELDS . ' (uff_usr_id, uff_name, uff_value) VALUES (?, ?, ?)';
-            $this->db->queryPrepared($sql, [(int) $userId, $name, $value]);
-            $status = 'created';
-        }
+        $user->saveChangesWithoutRights();
+        $user->save();
 
         return [
             'status' => 'success',
-            'action' => $status,
-            'data' => [
-                'name' => $name,
-                'value' => $value,
-            ],
+            'data' => $resultdata,
         ];
     }
 
@@ -67,25 +61,28 @@ final class UserWriteService
         $payload = $this->payload;
         $this->assertUserExists($userId);
 
-        $value = (string) ($payload['value'] ?? '');
-
-        $sql = 'SELECT uff_id FROM ' . TBL_USER_FIELDS . ' WHERE uff_usr_id = ? AND uff_name = ?';
-        $result = $this->db->queryPrepared($sql, [(int) $userId, $name]);
-        $existing = $result->fetch();
-
-        if ($existing) {
-            $sql = 'UPDATE ' . TBL_USER_FIELDS . ' SET uff_value = ? WHERE uff_usr_id = ? AND uff_name = ?';
-            $this->db->queryPrepared($sql, [$value, (int) $userId, $name]);
-            $status = 'updated';
-        } else {
-            $sql = 'INSERT INTO ' . TBL_USER_FIELDS . ' (uff_usr_id, uff_name, uff_value) VALUES (?, ?, ?)';
-            $this->db->queryPrepared($sql, [(int) $userId, $name, $value]);
-            $status = 'created';
+        $value = (string) ($payload['data'] ?? '');
+        
+        if (is_array($payload['data'] ?? null)) {
+            throw new ApiException('Field value must be a string.', 'validation_failed', 422);
         }
+
+        if ($name === '') {
+            throw new ApiException('Field name is required.', 'validation_failed', 422);
+        }
+
+        $user = new User($this->db, $this->profileFields, $userId);
+        if ($this->profileFields->hasProperty($name)) {
+            $user->setValue($name, $value);
+        } else {
+            throw new ApiException('Field name is invalid.', 'validation_failed', 422);
+        }     
+
+        $user->saveChangesWithoutRights();
+        $user->save();
 
         return [
             'status' => 'success',
-            'action' => $status,
             'data' => [
                 'name' => $name,
                 'value' => $value,
@@ -137,89 +134,6 @@ final class UserWriteService
         ];
     }
 
-    /**
-     * POST /core/users/{userId}/memberships/role/{roleId} – Create membership for role
-     */
-    public function createMembershipForRole(int $userId, int $roleId): array
-    {
-        $this->assertUserExists($userId);
-        $this->assertRoleExists($roleId);
-
-        $payload = $this->payload;
-        $beginDate = (string) ($payload['beginDate'] ?? date('Y-m-d'));
-        $endDate = $payload['endDate'] ?? null;
-        $orgId = (int) ($payload['orgId'] ?? 1);
-
-        $sql = 'INSERT INTO ' . TBL_MEMBERS . ' (mem_usr_id, mem_rol_id, mem_org_id, mem_begin, mem_end) 
-                VALUES (?, ?, ?, ?, ?)';
-
-        $this->db->queryPrepared($sql, [
-            (int) $userId,
-            (int) $roleId,
-            (int) $orgId,
-            $beginDate,
-            $endDate,
-        ]);
-
-        $memId = $this->db->lastInsertId();
-
-        return [
-            'status' => 'success',
-            'action' => 'created',
-            'data' => [
-                'id' => (int) $memId,
-                'roleId' => $roleId,
-                'orgId' => $orgId,
-                'beginDate' => $beginDate,
-                'endDate' => $endDate,
-            ],
-        ];
-    }
-
-    /**
-     * POST /core/users/{userId}/memberships/organization/{orgId} – Create/update membership for org
-     */
-    public function createMembershipForOrg(int $userId, int $orgId): array
-    {
-        $this->assertUserExists($userId);
-        $this->assertOrgExists($orgId);
-
-        $payload = $this->payload;
-        $roleId = (int) ($payload['roleId'] ?? null);
-        if ($roleId === 0) {
-            throw new ApiException('Role ID is required.', 'validation_failed', 422);
-        }
-
-        $this->assertRoleExists($roleId);
-
-        $beginDate = (string) ($payload['beginDate'] ?? date('Y-m-d'));
-        $endDate = $payload['endDate'] ?? null;
-
-        $sql = 'INSERT INTO ' . TBL_MEMBERS . ' (mem_usr_id, mem_rol_id, mem_org_id, mem_begin, mem_end) 
-                VALUES (?, ?, ?, ?, ?)';
-
-        $this->db->queryPrepared($sql, [
-            (int) $userId,
-            (int) $roleId,
-            (int) $orgId,
-            $beginDate,
-            $endDate,
-        ]);
-
-        $memId = $this->db->lastInsertId();
-
-        return [
-            'status' => 'success',
-            'action' => 'created',
-            'data' => [
-                'id' => (int) $memId,
-                'roleId' => $roleId,
-                'orgId' => $orgId,
-                'beginDate' => $beginDate,
-                'endDate' => $endDate,
-            ],
-        ];
-    }
 
     private function assertUserExists(int $userId): void
     {
