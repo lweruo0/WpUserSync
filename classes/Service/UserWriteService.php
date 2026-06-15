@@ -134,10 +134,10 @@ final class UserWriteService
         $date = $data['date'] ?? date('Y-m-d');
         $name = $data['name'] ?? 'Arbeitsdienstbezeichung';
         $hours = $data['hours'] ?? 0;
-        $ad_id = $data['id'] ?? null;
+        $pad_id = $data['id'] ?? null;
 
 
-        if (!empty($ad_id)) {
+        if (!empty($pad_id)) {
             $sql = 'UPDATE ' . TBL_USER_ARBEITSDIENST . '
                     SET pad_cat_id = ? , 
                         pad_pro_id = ? , 
@@ -145,7 +145,7 @@ final class UserWriteService
                         pad_name = ? , 
                         pad_hours = ?
                     WHERE pad_id = ?';
-            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $ad_id]);
+            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id]);
             $stmt->execute();
 
         } else {
