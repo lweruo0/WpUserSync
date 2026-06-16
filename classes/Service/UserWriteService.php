@@ -103,7 +103,8 @@ final class UserWriteService
         $this->assertUserExists($userId);
 
         $data = $payload['data'] ?? array();
-        
+        $check_dublicates = $payload['check_dublicates'] ?? False;
+
         if (empty($payload['data'])) {
             throw new ApiException('Data is required.', 'validation_failed', 422);
         }
@@ -138,6 +139,12 @@ final class UserWriteService
         $pad_id = $data['id'] ?? null;
 
 
+        // Get or create category for the year
+        $sql = 'SELECT pad_id FROM ' . TBL_CATEGORIES . ' 
+            WHERE cat_name = ? AND cat_type = ? AND cat_org_id = ? AND pad_user_id = ? AND pad_date = ?';
+        $stmt = $this->db->queryPrepared($sql, [$name, 'ADC', (int) $this->gCurrentOrgId, $userId, $date]);
+        $pad_id_found = $stmt->fetch();        
+
         if (!empty($pad_id)) {
             $sql = 'UPDATE ' . TBL_USER_ARBEITSDIENST . '
                     SET pad_cat_id = ? , 
@@ -148,7 +155,7 @@ final class UserWriteService
                     WHERE pad_id = ?';
             $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id]);
 
-        } else {
+        } elseif (!$check_dublicates || !empty($pad_id_found)) {
             $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
                     ( pad_org_id, pad_user_id, pad_cat_id, pad_pro_id, pad_date, pad_name, pad_hours)
                     VALUES (?, ?, ?, ?, ?, ?, ?)';
@@ -159,6 +166,8 @@ final class UserWriteService
                                                     $date, 
                                                     $name, 
                                                     $hours]);
+        } else {
+            throw new ApiException('Duplicate entry for the same date.', 'validation_failed', 422);
         }
         return [
             'status' => 'success',
