@@ -146,7 +146,7 @@ final class UserWriteService
                         pad_name = ? , 
                         pad_hours = ?
                     WHERE pad_id = ?';
-            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id])
+            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id]);
 
         } else {
             $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
