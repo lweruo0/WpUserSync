@@ -46,8 +46,11 @@ try {
         $Service = new UserReadService($gDb, $gProfileFields, $_GET, $payload);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'POST') {
         $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
-    } else {
-        throw new ApiException('Only GET and POST methods are allowed.', 'method_not_allowed', 405);
+    } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'DELETE') {
+        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
+    }
+     else {
+        throw new ApiException('Only GET/POST/DELETE methods are allowed.', 'method_not_allowed', 405);
     }
 
 
