@@ -155,7 +155,7 @@ final class UserWriteService
                     WHERE pad_id = ?';
             $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id]);
 
-        } elseif (!$check_dublicates || !empty($pad_id_found)) {
+        } elseif (!$check_dublicates || empty($pad_id_found)) {
             $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
                     ( pad_org_id, pad_user_id, pad_cat_id, pad_pro_id, pad_date, pad_name, pad_hours)
                     VALUES (?, ?, ?, ?, ?, ?, ?)';
