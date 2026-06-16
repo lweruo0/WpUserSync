@@ -89,6 +89,8 @@ try {
         $userId = (int) $router->getPathParam('userId');
         $year = (int) $router->getPathParam('year');
         $result = $Service->getUserArbeitsdienst($userId, $year);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/new')) {
+        $result = $Service->createUser();
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
         $userId = (int) $router->getPathParam('userId');
         $result = $Service->setUserField($userId);

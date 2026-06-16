@@ -198,6 +198,77 @@ final class UserWriteService
     }
 
 
+    public function findUserIdbyFirstnameLastnameBirthday(string $firstName, string $lastName, string $birthday): ?int
+    {
+        // search for existing user with same name and read user data
+        $sql = 'SELECT MAX(usr_id) AS usr_id
+                  FROM '.TBL_USERS.'
+            INNER JOIN '.TBL_USER_DATA.' AS last_name
+                    ON last_name.usd_usr_id = usr_id
+                   AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
+                   AND last_name.usd_value  = ? -- $user->getValue(\'LAST_NAME\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS birthday
+                    ON birthday.usd_usr_id = usr_id
+                   AND birthday.usd_usf_id = ? -- $gProfileFields->getProperty(\'BIRTHDAY\', \'usf_id\')
+                   AND birthday.usd_value  = ? -- $user->getValue(\'BIRTHDAY\', \'database\')
+            INNER JOIN '.TBL_USER_DATA.' AS first_name
+                    ON first_name.usd_usr_id = usr_id
+                   AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
+                   AND first_name.usd_value  = ? -- $user->getValue(\'FIRST_NAME\', \'database\')
+                 WHERE usr_valid = true';
+        $queryParams = array(
+            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
+            $lastName,
+            $this->profileFields->getProperty('BIRTHDAY', 'usf_id'),
+            $birthday,
+            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
+            $firstName
+        );
+        $pdoStatement = $this->db->queryPrepared($sql, $queryParams);
+        $maxUserId = (int) $pdoStatement->fetchColumn();
+
+        return $maxUserId > 0 ? $maxUserId : null;
+    }
+
+    /**
+     * POST /core/users/new
+     */
+    public function createUser(): array
+    {
+        $payload = $this->payload;
+        $firstName = $payload['firstName'] ?? null;
+        $lastName = $payload['lastName'] ?? null;
+        $birthday = $payload['birthday'] ?? null;
+
+        if (!$firstName || !$lastName || !$birthday) {
+            throw new ApiException('firstName, lastName and birthday are required.', 'validation_failed', 422);
+        }
+
+        $existingUserId = $this->findUserIdbyFirstnameLastnameBirthday($firstName, $lastName, $birthday);
+        if ($existingUserId) {
+            return [
+                'status' => 'success',
+                'message' => 'User already exists.',
+                'userId' => $existingUserId,
+            ];
+        }
+
+        // Create a new user
+        $user = new User($this->db, $this->profileFields);
+        $user->setValue('FIRST_NAME', $firstName);
+        $user->setValue('LAST_NAME', $lastName);
+        $user->setValue('BIRTHDAY', $birthday);
+        $user->save();
+
+
+
+        return [
+            'status' => 'success',
+            'message' => 'User created successfully.',
+            'userId' => $user->getId(),
+        ];
+    }
+
     /**
      * POST /core/users/{userId}/memberships/{memId} – Update membership
      */
