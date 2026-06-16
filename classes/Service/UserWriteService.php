@@ -171,6 +171,11 @@ final class UserWriteService
         }
         return [
             'status' => 'success',
+            'check_dublicates' => $check_dublicates,
+            'pad_id_found' => $pad_id_found,
+
+            'data' => [
+            ],
         ];
     }
 
