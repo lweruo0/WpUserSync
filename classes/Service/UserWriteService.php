@@ -205,16 +205,16 @@ final class UserWriteService
                   FROM '.TBL_USERS.'
             INNER JOIN '.TBL_USER_DATA.' AS last_name
                     ON last_name.usd_usr_id = usr_id
-                   AND last_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'LAST_NAME\', \'usf_id\')
-                   AND last_name.usd_value  = ? -- $user->getValue(\'LAST_NAME\', \'database\')
+                   AND last_name.usd_usf_id = ?
+                   AND last_name.usd_value  = ?
             INNER JOIN '.TBL_USER_DATA.' AS birthday
                     ON birthday.usd_usr_id = usr_id
-                   AND birthday.usd_usf_id = ? -- $gProfileFields->getProperty(\'BIRTHDAY\', \'usf_id\')
-                   AND birthday.usd_value  = ? -- $user->getValue(\'BIRTHDAY\', \'database\')
+                   AND birthday.usd_usf_id = ?
+                   AND birthday.usd_value  = ?
             INNER JOIN '.TBL_USER_DATA.' AS first_name
                     ON first_name.usd_usr_id = usr_id
-                   AND first_name.usd_usf_id = ? -- $gProfileFields->getProperty(\'FIRST_NAME\', \'usf_id\')
-                   AND first_name.usd_value  = ? -- $user->getValue(\'FIRST_NAME\', \'database\')
+                   AND first_name.usd_usf_id = ?
+                   AND first_name.usd_value  = ?
                  WHERE usr_valid = true';
         $queryParams = array(
             $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
@@ -258,6 +258,7 @@ final class UserWriteService
 
         // Create a new user
         $user = new User($this->db, $this->profileFields);
+        $user->assignDefaultRoles();
         $user->setValue('FIRST_NAME', $firstName);
         $user->setValue('LAST_NAME', $lastName);
         $user->setValue('BIRTHDAY', $birthday);
@@ -314,6 +315,95 @@ final class UserWriteService
                 'endDate' => $endDate,
             ],
         ];
+    }
+
+    public function upsert(array $payload): array
+    {
+        $profileData = $payload['profile'] ?? array();    
+    
+        $userId = $this->findUserId($profileData);
+        $user = new User($this->db, $this->profileFields, $userId ?? 0);
+        $isNew = $userId === null;
+
+
+        foreach ($profileData as $fieldName => $value) {
+            if (in_array($fieldName, $this->existingFieldNames, true)) {
+                $user->setValue($fieldName, $value);
+            }
+        }
+
+        $user->saveChangesWithoutRights();
+        $user->save();
+        $usr_id = (int) $user->getValue('usr_id');
+
+        global $plg_wpusersync_assign_default_roles;
+
+        if ($isNew && ($plg_wpusersync_assign_default_roles ?? true)) {
+            $user->assignDefaultRoles();
+        }
+
+        $roleIds = array();
+        $roles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
+
+
+        foreach ($roles as $role => $roledata) {
+
+            $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            if (isset($roleId)) {
+                $roleIds[] = array($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            }
+        }
+
+        return array(
+            'status' => $isNew ? 'created' : 'updated',
+            'user_id' => (int) $user->getValue('usr_id'),
+            'email' => $profileData['EMAIL'] ?? '',
+            'roles_applied' => $roleIds,
+        );
+    }
+
+    public function assignRoleToUserByName(int $userId, string $roleName, string $startDate = '', string $endDate = ''): int|null
+    {
+        global $gDb, $gCurrentOrgId;
+
+        $roleName = trim($roleName);
+        if ($userId <= 0 || $roleName === '') {
+            echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
+            return null;
+        }
+
+        $role = new Role($gDb);
+        $role->readDataByColumns(array(
+            'rol_name' => $roleName,
+            'cat_org_id' => $gCurrentOrgId
+        ));
+
+        if ($role->isNewRecord()) {
+            echo "Role '" . $roleName . "' not found. Cannot assign to user ID " . $userId . ".<br />";
+            return null;
+        }
+
+        $startDate = $this->normalizeDateToYmd($startDate) ?: DATE_NOW;
+        $endDate = $this->normalizeDateToYmd($endDate) ?: DATE_MAX;
+
+        $role->setMembership($userId, $startDate, $endDate, false, true);
+
+        return (int) $role->getValue('rol_id');
+    }
+
+    private function normalizeDateToYmd(string $dateValue): string
+    {
+        $dateValue = trim($dateValue);
+        if ($dateValue === '') {
+            return '';
+        }
+
+        try {
+            $date = new \DateTime($dateValue);
+            return $date->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
 
