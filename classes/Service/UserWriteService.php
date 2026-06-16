@@ -162,11 +162,27 @@ final class UserWriteService
         }
         return [
             'status' => 'success',
-            'data' => [
-
-            ],
         ];
     }
+
+    /**
+     * DELETE /core/users/{userId}/arbeitsdienst/{id} – Delete a custom field by ID
+     */
+    public function deleteUserArbeitsdienst(int $userId, int $id): array
+    {
+        if ($id === 0) {
+            throw new ApiException('ID is required.', 'validation_failed', 422);
+        }
+
+        // Delete the record with the given ID
+        $sql = 'DELETE FROM ' . TBL_USER_ARBEITSDIENST . ' WHERE pad_id = ? AND pad_user_id = ?';
+        $stmt = $this->db->queryPrepared($sql, [$id, $userId]);
+
+        return [
+            'status' => 'success',
+        ];
+    }
+
 
     /**
      * POST /core/users/{userId}/memberships/{memId} – Update membership
