@@ -248,6 +248,9 @@ final class UserWriteService
         if ($existingUserId) {
             return [
                 'status' => 'success',
+                'firstname' => $firstName,
+                'lastname' => $lastName,
+                'birthday' => $birthday,
                 'message' => 'User already exists.',
                 'userId' => $existingUserId,
             ];
