@@ -140,9 +140,9 @@ final class UserWriteService
 
 
         // Get or create category for the year
-        $sql = 'SELECT pad_id FROM ' . TBL_CATEGORIES . ' 
-            WHERE cat_name = ? AND cat_type = ? AND cat_org_id = ? AND pad_user_id = ? AND pad_date = ?';
-        $stmt = $this->db->queryPrepared($sql, [$name, 'ADC', (int) $this->gCurrentOrgId, $userId, $date]);
+        $sql = 'SELECT pad_id FROM ' . TBL_USER_ARBEITSDIENST . ' 
+            WHERE pad_name = ? AND pad_org_id = ? AND pad_user_id = ? AND pad_date = ? AND pad_cat_id = ? AND pad_hours = ?';
+        $stmt = $this->db->queryPrepared($sql, [$name, (int) $this->gCurrentOrgId, $userId, $date, $categoryid, $hours]);
         $pad_id_found = $stmt->fetch();        
 
         if (!empty($pad_id)) {
