@@ -265,7 +265,7 @@ final class UserWriteService
         return [
             'status' => 'success',
             'message' => 'User created successfully.',
-            'userId' => $usr_id = (int) $user->getValue('usr_id');  
+            'userId' => $usr_id = (int) $user->getValue('usr_id')  
         ];
     }
 
