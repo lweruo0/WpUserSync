@@ -17,6 +17,7 @@ final class UserWriteService
     private array $payload;
     private int $gCurrentOrgId;
     private Database $gDb;
+    private ProfileFields $gProfileFields;
 
 
     
@@ -130,7 +131,7 @@ final class UserWriteService
         # TABELLE TBL_USER_ARBEITSDIENST
         # pad_id, pad_org_id, pad_user_id, pad_date, pad_cat_id, pad_pro_id, pad_name, pad_hours
 
-        $pro_id = $data['pro_id'] ?? 0;
+        $pro_id = $data['pro_id'] ?? Null;
         $date = $data['date'] ?? date('Y-m-d');
         $name = $data['name'] ?? 'Arbeitsdienstbezeichung';
         $hours = $data['hours'] ?? 0;
