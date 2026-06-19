@@ -88,29 +88,41 @@ final class UserReadService
     public function searchUser(): array
     {
         $query = $this->query;
-
         $firstName = trim((string) ($query['firstName'] ?? ''));
         $lastName = trim((string) ($query['lastName'] ?? ''));
         $birthday = trim((string) ($query['birthday'] ?? ''));
 
+        // Require all search criteria so the SQL can stay static and deterministic.
+        if ($firstName === '' || $lastName === '' || $birthday === '') {
+                return [
+                        'userId' => 0,
+                        'useruuid' => '',
+                        'loginName' => '',
+                        'firstName' => '',
+                        'lastName' => '',
+                        'birthday' => '',
+                        'exists' => false
+                ];
+        }
+
         $sql = 'SELECT u.usr_id, u.usr_login_name, u.usr_uuid,
-                       first_name.usd_value AS first_name,
-                       last_name.usd_value AS last_name,
-                       birthday.usd_value AS birthday
-                  FROM ' . TBL_USERS . ' AS u
-            LEFT JOIN ' . TBL_USER_DATA . ' AS first_name
-                    ON first_name.usd_usr_id = u.usr_id
-                   AND first_name.usd_usf_id = ?
-                   AND first_name.usd_value = ?
-            LEFT JOIN ' . TBL_USER_DATA . ' AS last_name
-                    ON last_name.usd_usr_id = u.usr_id
-                   AND last_name.usd_usf_id = ?
-                   AND last_name.usd_value = ?
-            LEFT JOIN ' . TBL_USER_DATA . ' AS birthday
-                    ON birthday.usd_usr_id = u.usr_id
-                   AND birthday.usd_usf_id = ?
-                   AND birthday.usd_value = ?
-                 WHERE u.usr_valid = true
+                   first_name.usd_value AS first_name,
+                   last_name.usd_value AS last_name,
+                   birthday.usd_value AS birthday
+              FROM ' . TBL_USERS . ' AS u
+            INNER JOIN ' . TBL_USER_DATA . ' AS first_name
+                ON first_name.usd_usr_id = u.usr_id
+               AND first_name.usd_usf_id = ?
+               AND first_name.usd_value = ?
+            INNER JOIN ' . TBL_USER_DATA . ' AS last_name
+                ON last_name.usd_usr_id = u.usr_id
+               AND last_name.usd_usf_id = ?
+               AND last_name.usd_value = ?
+            INNER JOIN ' . TBL_USER_DATA . ' AS birthday
+                ON birthday.usd_usr_id = u.usr_id
+               AND birthday.usd_usf_id = ?
+               AND birthday.usd_value = ?
+             WHERE u.usr_valid = true
              ORDER BY u.usr_id DESC LIMIT 1';
 
         $queryParams = array(
