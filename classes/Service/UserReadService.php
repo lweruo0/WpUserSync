@@ -133,6 +133,11 @@ final class UserReadService
                 'firstName' => (string) ($row['first_name'] ?? ''),
                 'lastName' => (string) ($row['last_name'] ?? ''),
                 'birthday' => (string) ($row['birthday'] ?? ''),
+
+                'sql' => $sql,
+                'queryParams' => $queryParams,
+
+
                 'exists' => true
             ];
         } else {
