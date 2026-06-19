@@ -35,7 +35,7 @@ final class UserWriteService
     /**
      * POST /core/users/{uuid}/fields – set multiple custom fields
      */
-    public function setUserField(int $uuid): array
+    public function setUserField(string $uuid): array
     {
         $payload = $this->payload;
         $userId = $this->assertUUIDExists($uuid);
