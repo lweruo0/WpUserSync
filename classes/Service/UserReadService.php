@@ -250,7 +250,7 @@ final class UserReadService
 
         return array(
             'status' => 'success',
-            'user_id' => $userId,
+            'uuid' => $uuid,
             'data' => $fields,
         );
     }

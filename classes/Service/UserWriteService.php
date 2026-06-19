@@ -33,12 +33,12 @@ final class UserWriteService
     }
 
     /**
-     * POST /core/users/{userId}/fields – set multiple custom fields
+     * POST /core/users/{uuid}/fields – set multiple custom fields
      */
-    public function setUserField(int $userId): array
+    public function setUserField(int $uuid): array
     {
         $payload = $this->payload;
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
 
         $user = new User($this->db, $this->profileFields, $userId);
 
@@ -63,12 +63,12 @@ final class UserWriteService
     }
 
     /**
-     * POST /core/users/{userId}/fields/{name} – Set a custom field by name
+     * POST /core/users/{uuid}/fields/{name} – Set a custom field by name
      */
-    public function setUserFieldByName(int $userId, string $name): array
+    public function setUserFieldByName(string $uuid, string $name): array
     {
         $payload = $this->payload;
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
 
         $value = (string) ($payload['data'] ?? '');
         
@@ -95,12 +95,12 @@ final class UserWriteService
     }
 
     /**
-     * POST /core/users/{userId}/arbeitsdienst/{year} – Set a custom field by name
+     * POST /core/users/{uuid}/arbeitsdienst/{year} – Set a custom field by name
      */
-    public function setUserArbeitsdienst(int $userId, int $year): array
+    public function setUserArbeitsdienst(string $uuid, int $year): array
     {
         $payload = $this->payload;
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
 
         $data = $payload['data'] ?? array();
         $check_dublicates = $payload['check_dublicates'] ?? False;
@@ -180,10 +180,12 @@ final class UserWriteService
     }
 
     /**
-     * DELETE /core/users/{userId}/arbeitsdienst/{id} – Delete a custom field by ID
+     * DELETE /core/users/{uuid}/arbeitsdienst/{id} – Delete a custom field by ID
      */
-    public function deleteUserArbeitsdienst(int $userId, int $id): array
+    public function deleteUserArbeitsdienst(string $uuid, int $id): array
     {
+        $userId = $this->assertUUIDExists($uuid);
+
         if ($id === 0) {
             throw new ApiException('ID is required.', 'validation_failed', 422);
         }
@@ -245,14 +247,14 @@ final class UserWriteService
         }
 
         $existingUserId = $this->findUserIdbyFirstnameLastnameBirthday($firstName, $lastName, $birthday);
+        $existingUserUuid = $this->getuuid($existingUserId);
+
+
         if ($existingUserId) {
             return [
                 'status' => 'success',
-                'firstname' => $firstName,
-                'lastname' => $lastName,
-                'birthday' => $birthday,
                 'message' => 'User already exists.',
-                'userId' => $existingUserId,
+                'uuid' => $existingUserUuid,
             ];
         }
 
@@ -264,22 +266,20 @@ final class UserWriteService
         $user->setValue('BIRTHDAY', $birthday);
         $user->save();
 
-
-
         return [
             'status' => 'success',
             'message' => 'User created successfully.',
-            'userId' => $usr_id = (int) $user->getValue('usr_id')  
+            'uuid' => $usr_id = (int) $user->getValue('usr_uuid')  
         ];
     }
 
     /**
-     * POST /core/users/{userId}/memberships/{memId} – Update membership
+     * POST /core/users/{uuid}/memberships/{memId} – Update membership
      */
-    public function updateMembership(int $userId, int $memId): array
+    public function updateMembership(string $uuid, int $memId): array
     {
         $payload = $this->payload;
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
         $this->assertMembershipBelongsToUser($memId, $userId);
 
         $beginDate = $payload['beginDate'] ?? null;
@@ -407,13 +407,24 @@ final class UserWriteService
     }
 
 
-    private function assertUserExists(int $userId): void
+    private function getuuid(int $userId): string
     {
-        $sql = 'SELECT 1 FROM ' . TBL_USERS . ' WHERE usr_id = ?';
-        $result = $this->db->queryPrepared($sql, [(int) $userId]);
-        if (!$result->fetch()) {
+        $sql = 'SELECT usr_uuid FROM ' . TBL_USERS . ' WHERE usr_id = ?';
+        $stmt = $this->db->queryPrepared($sql, [$userId]);
+        $res = $stmt->fetch();
+        return $res['usr_uuid'] ?? '';
+    }
+
+
+    private function assertUUIDExists(string $usr_uuid): int
+    {
+        $sql = 'SELECT usr_id FROM ' . TBL_USERS . ' WHERE usr_uuid = ?';
+        $stmt = $this->db->queryPrepared($sql, [$usr_uuid]);
+        $res = $stmt->fetch();
+        if (!$res['usr_id']) {
             throw new ApiException('User not found.', 'user_not_found', 404);
         }
+        return (int) $res['usr_id'];
     }
 
     private function assertMembershipBelongsToUser(int $memId, int $userId): void
