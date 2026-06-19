@@ -43,7 +43,7 @@ try {
     }    
     global $gDb, $gProfileFields; // Assuming $gDb is defined in the bootstrap files
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'GET') {
-        $Service = new UserReadService($gDb, $gProfileFields, $_GET, $payload);
+        $Service = new UserReadService($gDb, $gProfileFields, $_GET);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'POST') {
         $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'DELETE') {
@@ -63,6 +63,8 @@ try {
         $result = $Service->listCategories($type);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/roles')) {
         $result = $Service->listRoles();
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/search')) {
+        $result = $Service->searchUser();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users')) {
         $result = $Service->listUsers();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}')) {

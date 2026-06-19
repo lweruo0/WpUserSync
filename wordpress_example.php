@@ -100,23 +100,14 @@ function wpusersync_send_signed_request(string $url, array $payload, string $cli
     );
 }
 
-// Beispielaufruf:
-// $apiUrl = 'https://example.org/adm_plugins/WpUserSync/api/write_user.php';
+// Beispielaufruf (aktueller Endpoint):
+// $apiUrl = 'https://example.org/adm_plugins/wpusersync/api/v1/core/users/new';
 // $clientId = 'wordpress-prod';
 // $sharedSecret = 'mein-langes-zufaelliges-shared-secret';
 // $payload = array(
-//     'profile' => array(
-//         'EMAIL' => 'max@example.org',
-//         'FIRST_NAME' => 'Max',
-//         'LAST_NAME' => 'Mustermann',
-//         'BIRTHDAY' => '1980-01-01',
-//         'GENDER' => 'M',
-//         'STREET' => 'Musterstrasse 1',
-//         'POSTCODE' => '12345',
-//         'CITY' => 'Musterstadt',
-//     ),
-//     'active' => true,
-//     'roles' => array('Mitglieder'),
+//     'firstName' => 'Max',
+//     'lastName' => 'Mustermann',
+//     'birthday' => '1980-01-01',
 // );
 //
 // $result = wpusersync_send_signed_request($apiUrl, $payload, $clientId, $sharedSecret);

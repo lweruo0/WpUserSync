@@ -18,15 +18,13 @@ final class UserReadService
     private Database $db;
     private ProfileFields $profileFields;
     private array $query;
-    private array $payload;
     private array $existingFieldNames = array();
 
-    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
+    public function __construct(Database $db, ProfileFields $profileFields, array $query = [])
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
         $this->query = $query;
-        $this->payload = $payload;
         foreach ($this->profileFields->getProfileFields() as $field) {
             $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
@@ -84,6 +82,72 @@ final class UserReadService
             'limit' => $limit,
         ];
     }
+    /**
+     * GET /core/search – Search for users
+     */
+    public function searchUser(): array
+    {
+        $query = $this->query;
+
+        $firstName = trim((string) ($query['firstName'] ?? ''));
+        $lastName = trim((string) ($query['lastName'] ?? ''));
+        $birthday = trim((string) ($query['birthday'] ?? ''));
+
+        $sql = 'SELECT u.usr_id, u.usr_login_name, u.usr_uuid,
+                       first_name.usd_value AS first_name,
+                       last_name.usd_value AS last_name,
+                       birthday.usd_value AS birthday
+                  FROM ' . TBL_USERS . ' AS u
+            LEFT JOIN ' . TBL_USER_DATA . ' AS first_name
+                    ON first_name.usd_usr_id = u.usr_id
+                   AND first_name.usd_usf_id = ?
+                   AND first_name.usd_value = ?
+            LEFT JOIN ' . TBL_USER_DATA . ' AS last_name
+                    ON last_name.usd_usr_id = u.usr_id
+                   AND last_name.usd_usf_id = ?
+                   AND last_name.usd_value = ?
+            LEFT JOIN ' . TBL_USER_DATA . ' AS birthday
+                    ON birthday.usd_usr_id = u.usr_id
+                   AND birthday.usd_usf_id = ?
+                   AND birthday.usd_value = ?
+                 WHERE u.usr_valid = true
+             ORDER BY u.usr_id DESC LIMIT 1';
+
+        $queryParams = array(
+            $this->profileFields->getProperty('FIRST_NAME', 'usf_id'),
+            $firstName,
+            $this->profileFields->getProperty('LAST_NAME', 'usf_id'),
+            $lastName,
+            $this->profileFields->getProperty('BIRTHDAY', 'usf_id'),
+            $birthday
+        );
+
+        $result = $this->db->queryPrepared($sql, $queryParams);
+        $users = [];
+        $row = $result->fetch();
+        if ($row) {
+            return [
+                'userId' => (int) $row['usr_id'],
+                'useruuid' => $row['usr_uuid'],
+                'loginName' => (string) $row['usr_login_name'],
+                'firstName' => (string) ($row['first_name'] ?? ''),
+                'lastName' => (string) ($row['last_name'] ?? ''),
+                'birthday' => (string) ($row['birthday'] ?? ''),
+                'exists' => true
+            ];
+        } else {
+            return [
+                'userId' => 0,
+                'useruuid' => '',
+                'loginName' => '',
+                'firstName' => '',
+                'lastName' => '',
+                'birthday' => '',
+                'exists' => false
+            ];
+        }
+    }
+
 
 
     /**
@@ -96,12 +160,7 @@ final class UserReadService
         $limit = min((int) ($query['limit'] ?? 50), 500);
         $offset = max(0, (int) ($query['offset'] ?? 0));
 
-        $filters = is_array($this->payload['filter'] ?? null) ? $this->payload['filter'] : array();
-        $firstName = trim((string) ($filters['firstName'] ?? ''));
-        $lastName = trim((string) ($filters['lastName'] ?? ''));
-        $birthday = trim((string) ($filters['birthday'] ?? ''));
-
-        $sql = 'SELECT u.usr_id, u.usr_login_name,
+        $sql = 'SELECT u.usr_id, u.usr_login_name, u.usr_uuid,
                        first_name.usd_value AS first_name,
                        last_name.usd_value AS last_name,
                        birthday.usd_value AS birthday
@@ -123,21 +182,6 @@ final class UserReadService
             $this->profileFields->getProperty('BIRTHDAY', 'usf_id')
         );
 
-        if ($firstName !== '') {
-            $sql .= ' AND first_name.usd_value = ?';
-            $queryParams[] = $firstName;
-        }
-
-        if ($lastName !== '') {
-            $sql .= ' AND last_name.usd_value = ?';
-            $queryParams[] = $lastName;
-        }
-
-        if ($birthday !== '') {
-            $sql .= ' AND birthday.usd_value = ?';
-            $queryParams[] = $birthday;
-        }
-
         $sql .= ' ORDER BY u.usr_id LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
 
         $result = $this->db->queryPrepared($sql, $queryParams);
@@ -145,6 +189,7 @@ final class UserReadService
         while ($row = $result->fetch()) {
             $users[] = [
                 'usr_id' => (int) $row['usr_id'],
+                'usr_uuid' => $row['usr_uuid'],
                 'usr_login_name' => (string) $row['usr_login_name'],
                 'FIRST_NAME' => (string) ($row['first_name'] ?? ''),
                 'LAST_NAME' => (string) ($row['last_name'] ?? ''),
