@@ -67,51 +67,51 @@ try {
         $result = $Service->searchUser();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users')) {
         $result = $Service->listUsers();
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->getUser($userId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->getUserFields($userId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
-        $userId = (int) $router->getPathParam('userId');
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->getUser($uuid);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/fields')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->getUserFields($uuid);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/fields/{name}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $name = (string) $router->getPathParam('name');
-        $result = $Service->getUserField($userId, $name);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->getUserMemberships($userId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{year}')) {
-        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->getUserField($uuid, $name);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->getUserMemberships($uuid);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships/{year}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
-        $result = $Service->getUserMemberships($userId, $year);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->getUserArbeitsdienst($userId);
-    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst/{year}')) {
-        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->getUserMemberships($uuid, $year);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->getUserArbeitsdienst($uuid);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
-        $result = $Service->getUserArbeitsdienst($userId, $year);
+        $result = $Service->getUserArbeitsdienst($uuid, $year);
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/new')) {
         $result = $Service->createUser();
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields')) {
-        $userId = (int) $router->getPathParam('userId');
-        $result = $Service->setUserField($userId);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/fields/{name}')) {
-        $userId = (int) $router->getPathParam('userId');
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/fields')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->setUserField($uuid);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/fields/{name}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $name = (string) $router->getPathParam('name');
-        $result = $Service->setUserFieldByName($userId, $name);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/memberships/{year}')) {
-        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->setUserFieldByName($uuid, $name);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships/{year}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
-        $result = $Service->setUserMemberships($userId, $year);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst/{year}')) {
-        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->setUserMemberships($uuid, $year);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
-        $result = $Service->setUserArbeitsdienst($userId, $year);
-    } elseif ($router->match('DELETE', '/adm_plugins/wpusersync/api/v1/core/users/{userId}/arbeitsdienst/{id}')) {
-        $userId = (int) $router->getPathParam('userId');
+        $result = $Service->setUserArbeitsdienst($uuid, $year);
+    } elseif ($router->match('DELETE', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{id}')) {
+        $uuid = (string) $router->getPathParam('uuid');
         $id = (int) $router->getPathParam('id');
-        $result = $Service->deleteUserArbeitsdienst($userId, $id);
+        $result = $Service->deleteUserArbeitsdienst($uuid, $id);
     } else {
         throw new ApiException('Endpoint not found.', 'not_found', 404);
     }

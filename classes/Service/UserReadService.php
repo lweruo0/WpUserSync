@@ -140,16 +140,11 @@ final class UserReadService
         if ($row) {
             return [
                 'userId' => (int) $row['usr_id'],
-                'useruuid' => $row['usr_uuid'],
+                'uuid' => $row['usr_uuid'],
                 'loginName' => (string) $row['usr_login_name'],
                 'firstName' => (string) ($row['first_name'] ?? ''),
                 'lastName' => (string) ($row['last_name'] ?? ''),
                 'birthday' => (string) ($row['birthday'] ?? ''),
-
-                'sql' => $sql,
-                'queryParams' => $queryParams,
-
-
                 'exists' => true
             ];
         } else {
@@ -206,7 +201,7 @@ final class UserReadService
         while ($row = $result->fetch()) {
             $users[] = [
                 'usr_id' => (int) $row['usr_id'],
-                'usr_uuid' => $row['usr_uuid'],
+                'uuid' => $row['usr_uuid'],
                 'usr_login_name' => (string) $row['usr_login_name'],
                 'FIRST_NAME' => (string) ($row['first_name'] ?? ''),
                 'LAST_NAME' => (string) ($row['last_name'] ?? ''),
@@ -224,11 +219,11 @@ final class UserReadService
     }
 
     /**
-     * GET /core/users/{userId} – Get single user
+     * GET /core/users/{uuid} – Get single user
      */
-    public function getUser(int $userId): array
+    public function getUser(string $uuid): array
     {
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
         return array(
             'status' => 'success',
             'usr_id' => $userId,
@@ -239,11 +234,11 @@ final class UserReadService
 
 
     /**
-     * GET /core/users/{userId}/fields – Get all custom fields for user
+     * GET /core/users/{uuid}/fields – Get all custom fields for user
      */
-    public function getUserFields(int $userId): array
+    public function getUserFields(string $uuid): array
     {
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
 
         $user = new User($this->db, $this->profileFields, $userId);
 
@@ -261,11 +256,11 @@ final class UserReadService
     }
 
     /**
-     * GET /core/users/{userId}/fields/{name} – Get single custom field
+     * GET /core/users/{uuid}/fields/{name} – Get single custom field
      */
-    public function getUserField(int $userId, string $name): array
+    public function getUserField(string $uuid, string $name): array
     {
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
 
         $user = new User($this->db, $this->profileFields, $userId);
 
@@ -281,11 +276,11 @@ final class UserReadService
     }
 
     /**
-     * GET /core/users/{userId}/memberships – Get all roles for user
+     * GET /core/users/{uuid}/memberships – Get all roles for user
      */
-    public function getUserMemberships(int $userId, ?int $year=null): array
+    public function getUserMemberships(string $uuid, ?int $year=null): array
     {
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
         $user = new User($this->db, $this->profileFields, $userId);
 
         $roles = array();
@@ -323,11 +318,11 @@ final class UserReadService
     }
 
     /**
-     * GET /core/users/{userId}/arbeitsdienst – Get all roles for user
+     * GET /core/users/{uuid}/arbeitsdienst – Get all roles for user
      */
-    public function getUserArbeitsdienst(int $userId, ?int $year=null): array
+    public function getUserArbeitsdienst(string $uuid, ?int $year=null): array
     {
-        $this->assertUserExists($userId);
+        $userId = $this->assertUUIDExists($uuid);
         $user = new User($this->db, $this->profileFields, $userId);
 
         $roles = array();
@@ -391,4 +386,14 @@ final class UserReadService
         }
     }
 
+    private function assertUUIDExists(string $usr_uuid): int
+    {
+        $sql = 'SELECT usr_id FROM ' . TBL_USERS . ' WHERE usr_uuid = ?';
+        $stmt = $this->db->queryPrepared($sql, [$usr_uuid]);
+        $res = $stmt->fetch();
+        if (!$res['usr_id']) {
+            throw new ApiException('User not found.', 'user_not_found', 404);
+        }
+        return (int) $res['usr_id'];
+    }
 }
