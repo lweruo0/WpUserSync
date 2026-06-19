@@ -113,7 +113,7 @@ try {
         $id = (int) $router->getPathParam('id');
         $result = $Service->deleteUserArbeitsdienst($uuid, $id);
     } else {
-        throw new ApiException('Endpoint not found.', 'not_found', 404);
+        throw new ApiException('Endpoint not found.', 'not_found', 404, array('path' => $router->getPath(), 'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'));
     }
 
     JsonResponder::send($result);
