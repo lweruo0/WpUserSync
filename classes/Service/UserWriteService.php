@@ -273,49 +273,268 @@ final class UserWriteService
         ];
     }
 
+
+
+    
     /**
-     * POST /core/users/{uuid}/memberships/{memId} – Update membership
+     * POST /core/users/{uuid}/memberships – Update memberships
      */
-    public function updateMembership(string $uuid, int $memId): array
+    public function updateMemberships(string $uuid): array
     {
         $payload = $this->payload;
         $userId = $this->assertUUIDExists($uuid);
-        $this->assertMembershipBelongsToUser($memId, $userId);
-
-        $beginDate = $payload['beginDate'] ?? null;
-        $endDate = $payload['endDate'] ?? null;
-
-        $updates = [];
-        $params = [];
-
-        if ($beginDate !== null) {
-            $updates[] = 'mem_begin = ?';
-            $params[] = (string) $beginDate;
+        $roles = is_array($payload['roles'] ?? null) ? $payload['roles'] : array();
+        
+        if (count($roles) === 0) {
+            throw new ApiException('No roles provided.', 'validation_failed', 422);
         }
 
-        if ($endDate !== null) {
-            $updates[] = 'mem_end = ?';
-            $params[] = (string) $endDate;
+        $roles_applied = array();
+        foreach ($roles as $role => $roledata) {
+            $roleId = $this->assignRoleToUserByName($userId, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            if (isset($roleId)) {
+                $roles_applied[] = array( $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
+            }
         }
 
-        if (empty($updates)) {
-            throw new ApiException('No fields to update.', 'validation_failed', 422);
+        if (count($roles_applied) === 0) {
+            throw new ApiException('No roles applied.', 'validation_failed', 422);
         }
 
-        $params[] = (int) $memId;
-        $sql = 'UPDATE ' . TBL_MEMBERS . ' SET ' . implode(', ', $updates) . ' WHERE mem_id = ?';
-        $this->db->queryPrepared($sql, $params);
-
-        return [
+        return array(
             'status' => 'success',
-            'action' => 'updated',
-            'data' => [
-                'id' => $memId,
-                'beginDate' => $beginDate,
-                'endDate' => $endDate,
-            ],
-        ];
+            'count' => count($roles_applied),
+            'roles_applied' => $roles_applied,
+        );
     }
+
+
+
+
+    /**
+     * updateMembershipBFV
+     * 
+     * der BFV hat folgende exlusiven Rollen: 
+     * 
+     *  ++ 'Aktiv'
+     *  ++ 'Passiv'
+     *  ++ 'Jugend'
+     *  ++ 'Förder'
+     *  ++ 'Ehren'
+     * 
+     * startdatum ist ist immer der yyyy-01-01 des Jahres, enddatum immer yyyy-12-31 des Jahres oder (unbefristet 9999-12-31)
+     * das bedeutet, wenn eine rolle für ein Jahr gesetzt werden soll,
+     *  - Ein Rollenwechsel für das aktuelle Jahr ist nur für den übergang 'Passiv' nach 'Aktiv' möglich in diesem Fall wird eine erfolt eine Rückabwicklung als wäre der Rollenwechsel zum 01.01. des aktuellen Jahres erfolgt.
+     *  - wird zuerst geprüft ob eine Rolle mit diesem Namen existiert die ein enddatum >= yyyy-12-31 hat. --> es muss nichts geändert werden.
+     *  - es wird die Rolle des Vorjahres gesucht und das Enddatum auf das Vorjahr gesetzt
+     *  - es wird eine neue Rolle mit den entsprechenden Startdatum und Enddatum unbefristet angelegt 
+     *  - falls weitere Rollen mit dem selben Startdatum existieren, werden diese entfernt.
+     * 
+     * -> die Rolle 'Jugend' kann nicht gesetzt werden, wenn das Alter des Mitglieds am 01.01. >= 18 Jahre ist.
+     * -> bei gesetzer 'Ehren' kann die Rolle nicht geändert werden.
+     * -> bei gesetzer 'Förder' kann die Rolle nicht geändert werden.
+     * -> bei gesetzer 'Jugend' muss in 'Aktiv' oder 'Passiv' gewechselt werden, wenn das Alter des Mitglieds am 01.01. >= 18 Jahre ist.
+     * -> bei gesetzer Rolle 'Aktiv' kann in 'Passiv' gewechselt werden. 
+     * -> bei gesetzer Rolle 'Passiv' kann in 'Aktiv' wenn das Alter des Mitglieds am 01.01. >= 18 Jahre ist oder 'Jugend' gewechselt werden, wenn das Alter des Mitglieds am 01.01. < 18 Jahre ist.
+     * 
+     * 
+     *  param uuid: User UUID
+     *  param role: 'Aktiv', 'Passiv', 'Jugend', 'Förder' oder 'Ehren'
+     *  param year: Jahr für das die Rolle gesetzt werden soll
+     * 
+     */
+    public function updateMitgliedschaftBFV(string $uuid, string $role, int $year): array
+    {
+        $allowedRoles = array('Aktiv', 'Passiv', 'Jugend', 'Förder', 'Ehren');
+        $role = trim($role);
+
+        if (!in_array($role, $allowedRoles, true)) {
+            throw new ApiException('Invalid BFV role. Allowed roles are Aktiv, Passiv, Jugend, Förder, Ehren.', 'validation_failed', 422);
+        }
+
+        if ($year < 1900 || $year > 9999) {
+            throw new ApiException('Invalid year.', 'validation_failed', 422);
+        }
+
+        $akt_year = (int) date('Y');
+        $userId = $this->assertUUIDExists($uuid);
+        $user = new User($this->db, $this->profileFields, $userId);
+        $birthdayStr = (string) $user->getValue('BIRTHDAY');
+
+        $birthday = \DateTime::createFromFormat('Y-m-d', $birthdayStr);
+        if (!$birthday) {
+            try {
+                $birthday = new \DateTime($birthdayStr);
+            } catch (\Throwable $e) {
+                throw new ApiException('User birthday is invalid or not set.', 'validation_failed', 422);
+            }
+        }
+
+        $yearStart = sprintf('%04d-01-01', $year);
+        $yearEnd = sprintf('%04d-12-31', $year);
+        $prevYearEnd = sprintf('%04d-12-31', $year - 1);
+
+        $yearStartDate = new \DateTime($yearStart);
+        $ageAtStartOfYear = (int) $birthday->diff($yearStartDate)->y;
+
+        if ($role === 'Jugend' && $ageAtStartOfYear >= 18) {
+            throw new ApiException('Role Jugend cannot be set when age at 01.01. is 18 or older.', 'validation_failed', 422);
+        }
+
+        $roleIdsByName = $this->getBfvRoleIdsByName($allowedRoles);
+        $missingRoles = array_diff($allowedRoles, array_keys($roleIdsByName));
+        if (count($missingRoles) > 0) {
+            throw new ApiException('Missing BFV roles in this organization: ' . implode(', ', $missingRoles), 'validation_failed', 422);
+        }
+
+        $bfvRoleIds = array_values(array_map('intval', $roleIdsByName));
+        $targetRoleId = (int) $roleIdsByName[$role];
+
+        $existingTargetMembership = $this->getActiveBfvMembershipAtDate($userId, $bfvRoleIds, $yearEnd, $targetRoleId);
+        if ($existingTargetMembership !== null) {
+            return array(
+                'status' => 'success',
+                'user_id' => $userId,
+                'role' => $role,
+                'year' => $year,
+                'no_change' => true,
+                'message' => 'Role already set for this year.'
+            );
+        }
+
+        $activeRoleAtYearStart = $this->getActiveBfvMembershipAtDate($userId, $bfvRoleIds, $yearStart);
+        $activeRoleName = $activeRoleAtYearStart['rol_name'] ?? '';
+
+        if ($year === $akt_year) {
+            $activeRoleToday = $this->getActiveBfvMembershipAtDate($userId, $bfvRoleIds, date('Y-m-d'));
+            $activeRoleTodayName = $activeRoleToday['rol_name'] ?? '';
+
+            if ($activeRoleTodayName !== '' && $activeRoleTodayName !== $role) {
+                if (!($activeRoleTodayName === 'Passiv' && $role === 'Aktiv')) {
+                    throw new ApiException('For current year, only transition Passiv -> Aktiv is allowed.', 'validation_failed', 422);
+                }
+            }
+        }
+
+        if ($activeRoleName !== '' && $activeRoleName !== $role) {
+            if ($activeRoleName === 'Ehren' || $activeRoleName === 'Förder') {
+                throw new ApiException('Role ' . $activeRoleName . ' is immutable and cannot be changed.', 'validation_failed', 422);
+            }
+
+            if ($activeRoleName === 'Jugend' && $ageAtStartOfYear >= 18 && !in_array($role, array('Aktiv', 'Passiv'), true)) {
+                throw new ApiException('At age 18 or older, role Jugend must transition to Aktiv or Passiv.', 'validation_failed', 422);
+            }
+
+            if ($activeRoleName === 'Aktiv' && $role !== 'Passiv') {
+                throw new ApiException('From role Aktiv, only transition to Passiv is allowed.', 'validation_failed', 422);
+            }
+
+            if ($activeRoleName === 'Passiv') {
+                if ($ageAtStartOfYear >= 18 && $role !== 'Aktiv') {
+                    throw new ApiException('From role Passiv at age 18 or older, only transition to Aktiv is allowed.', 'validation_failed', 422);
+                }
+
+                if ($ageAtStartOfYear < 18 && $role !== 'Jugend') {
+                    throw new ApiException('From role Passiv below age 18, only transition to Jugend is allowed.', 'validation_failed', 422);
+                }
+            }
+        }
+
+        $inPlaceholders = implode(', ', array_fill(0, count($bfvRoleIds), '?'));
+
+        // End any active BFV role at start of the target year so new role starts cleanly on 01.01.
+        $sql = 'UPDATE ' . TBL_MEMBERS . '
+                SET mem_end = ?
+                WHERE mem_usr_id = ?
+                  AND mem_rol_id IN (' . $inPlaceholders . ')
+                  AND mem_rol_id <> ?
+                  AND (mem_begin IS NULL OR mem_begin <= ?)
+                  AND (mem_end IS NULL OR mem_end >= ?)';
+        $queryParams = array_merge(array($prevYearEnd, $userId), $bfvRoleIds, array($targetRoleId, $yearStart, $yearStart));
+        $this->db->queryPrepared($sql, $queryParams);
+
+        $assignedRoleId = $this->assignRoleToUserByName($userId, $role, $yearStart, '9999-12-31');
+        if ($assignedRoleId === null) {
+            throw new ApiException('Role could not be assigned.', 'validation_failed', 422);
+        }
+
+        $sql = 'SELECT mem_id
+                FROM ' . TBL_MEMBERS . '
+                WHERE mem_usr_id = ?
+                  AND mem_rol_id = ?
+                  AND mem_begin = ?
+                ORDER BY mem_id DESC';
+        $stmt = $this->db->queryPrepared($sql, array($userId, $targetRoleId, $yearStart));
+        $newMembership = $stmt->fetch();
+        $newMembershipId = (int) ($newMembership['mem_id'] ?? 0);
+
+        // Keep only one BFV role starting at 01.01.<year>.
+        $sql = 'DELETE FROM ' . TBL_MEMBERS . '
+                WHERE mem_usr_id = ?
+                  AND mem_rol_id IN (' . $inPlaceholders . ')
+                  AND mem_begin = ?
+                  AND mem_id <> ?';
+        $queryParams = array_merge(array($userId), $bfvRoleIds, array($yearStart, $newMembershipId));
+        $this->db->queryPrepared($sql, $queryParams);
+
+        return array(
+            'status' => 'success',
+            'user_id' => $userId,
+            'role' => $role,
+            'year' => $year,
+            'age_at_year_start' => $ageAtStartOfYear,
+            'assigned_role_id' => (int) $assignedRoleId,
+            'membership_id' => $newMembershipId,
+            'active_role_at_year_start' => $activeRoleName,
+            'start_date' => $yearStart,
+            'end_date' => '9999-12-31',
+            'no_change' => false,
+        );
+
+    }
+
+    /**
+     * Es soll eine Funktion geben, die die Beitragsrolle für ein Jahr setzt. Es gibt folgende Beitragsrollen:
+     * 
+     *  ## Aktiv
+     *  'Bearbeitungsgebühr',
+     *  'passiv->aktiv Differenz',
+     *  'Erstbesatz',
+     *  'Aktivbeitrag',
+     *  'Bootsbeitrag',
+     * 
+     * ## Jugend
+     *  '2.Angel',
+     *  'Jugendbeitrag',
+     *  'Bearbeitungsgebühr',
+     * 
+     * ## Förder
+     *  'Förderbeitrag 12€',
+     *  'Förderbeitrag 20€',
+     *  'Förderbeitrag 25€',
+     *  'Förderbeitrag 50€',
+     *  'Förderbeitrag 100€',
+     * 
+     * ## Passiv
+     *  'Passivbeitrag',
+     *  'Erstbesatz',
+     * 
+     * 
+     * 
+     * Wenn das aktuelle Jahr übergeben wird ist ja nur der Wechsel von Passiv nach aktiv Möglich. 
+     * Die Beitragsrolle Passiv muss dann zum 31.12. des aktuellen Jahres beendet werden und die Beitragsrolle 
+     * 'passiv->aktiv Differenz' gesetzt werden mit startdatum 01.01. des aktuellen Jahres und enddatum 31.12. des aktuellen Jahres, damit die Beitragsdifferenz korrekt berechnet werden kann.
+     * 'Aktivbeitrag' muss zum 01.01. des aktuellen Jahres gesetzt werden. enddatum unbefristet 9999-12-31
+     * Wenn das aktuelle Jahr übergeben wird, und die Aktuelle Rolle nicht 'Aktiv' ist, muss eine Fehlermeldung ausgegeben werden, 
+     * dass die Beitragsrolle für das aktuelle Jahr nur gesetzt werden kann, wenn die Rolle 'Aktiv' ist.
+     * 
+     **/
+
+    private function updateBeitragsrolleBFV(string $uuid, string $role, string $beitragsrollen, int $year): array
+    {
+
+    }
+
 
     public function upsert(array $payload): array
     {
@@ -347,7 +566,6 @@ final class UserWriteService
 
 
         foreach ($roles as $role => $roledata) {
-
             $roleId = $this->assignRoleToUserByName($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
             if (isset($roleId)) {
                 $roleIds[] = array($usr_id, $role, $roledata['start_date'] ?? '', $roledata['end_date'] ?? '');
@@ -404,6 +622,58 @@ final class UserWriteService
         } catch (\Throwable $e) {
             return '';
         }
+    }
+
+    private function getBfvRoleIdsByName(array $roleNames): array
+    {
+        if (count($roleNames) === 0) {
+            return array();
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($roleNames), '?'));
+        $sql = 'SELECT rol_id, rol_name
+                FROM ' . TBL_ROLES . '
+                INNER JOIN ' . TBL_CATEGORIES . ' ON rol_cat_id = cat_id
+                WHERE cat_org_id = ?
+                  AND rol_name IN (' . $placeholders . ')';
+        $queryParams = array_merge(array((int) $this->gCurrentOrgId), $roleNames);
+        $stmt = $this->db->queryPrepared($sql, $queryParams);
+
+        $roleIdsByName = array();
+        while ($row = $stmt->fetch()) {
+            $roleIdsByName[(string) $row['rol_name']] = (int) $row['rol_id'];
+        }
+
+        return $roleIdsByName;
+    }
+
+    private function getActiveBfvMembershipAtDate(int $userId, array $roleIds, string $date, ?int $specificRoleId = null): ?array
+    {
+        if (count($roleIds) === 0) {
+            return null;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($roleIds), '?'));
+        $sql = 'SELECT mem_id, mem_rol_id, mem_begin, mem_end, rol_name
+                FROM ' . TBL_MEMBERS . '
+                INNER JOIN ' . TBL_ROLES . ' ON mem_rol_id = rol_id
+                WHERE mem_usr_id = ?
+                  AND mem_rol_id IN (' . $placeholders . ')
+                  AND (mem_begin IS NULL OR mem_begin <= ?)
+                  AND (mem_end IS NULL OR mem_end >= ?)';
+
+        $queryParams = array_merge(array($userId), $roleIds, array($date, $date));
+
+        if ($specificRoleId !== null) {
+            $sql .= ' AND mem_rol_id = ?';
+            $queryParams[] = $specificRoleId;
+        }
+
+        $sql .= ' ORDER BY mem_begin DESC, mem_id DESC';
+        $stmt = $this->db->queryPrepared($sql, $queryParams);
+        $row = $stmt->fetch();
+
+        return $row ? $row : null;
     }
 
 

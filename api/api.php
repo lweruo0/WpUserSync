@@ -100,10 +100,9 @@ try {
         $uuid = (string) $router->getPathParam('uuid');
         $name = (string) $router->getPathParam('name');
         $result = $Service->setUserFieldByName($uuid, $name);
-    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships/{year}')) {
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships')) {
         $uuid = (string) $router->getPathParam('uuid');
-        $year = (int) $router->getPathParam('year');
-        $result = $Service->setUserMemberships($uuid, $year);
+        $result = $Service->updateMemberships($uuid);
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
         $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
