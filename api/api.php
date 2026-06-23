@@ -91,6 +91,9 @@ try {
         $uuid = (string) $router->getPathParam('uuid');
         $year = (int) $router->getPathParam('year');
         $result = $Service->getUserArbeitsdienst($uuid, $year);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedschaftbfv')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $Service->MitgliedschaftBFV($uuid);    
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/new')) {
         $result = $Service->createUser();
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/fields')) {
