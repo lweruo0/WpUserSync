@@ -657,10 +657,18 @@ final class UserWriteService
             }
         }
 
-        // Delete all payroles for this role upfront (except Erstbesatz, handled separately)
-        $payrolesToDelete = array_filter($allowedPayroles, fn($p) => $p !== 'Erstbesatz');
+        // Delete all known payroles upfront (except Erstbesatz, handled separately)
+        $allKnownPayroles = array();
+        foreach ($allowedPayrolesByRole as $rolePayroles) {
+            foreach ($rolePayroles as $payroleName) {
+                $allKnownPayroles[] = $payroleName;
+            }
+        }
+        $allKnownPayroles = array_values(array_unique($allKnownPayroles));
+        $payrolesToDelete = array_values(array_filter($allKnownPayroles, fn($p) => $p !== 'Erstbesatz'));
+
         if (!empty($payrolesToDelete)) {
-            $deleteIds = $this->getBfvRoleIdsByName(array_values($payrolesToDelete));
+            $deleteIds = $this->getBfvRoleIdsByName($payrolesToDelete);
             if (!empty($deleteIds)) {
                 $inPlaceholders = implode(', ', array_fill(0, count($deleteIds), '?'));
                 $sql = 'DELETE FROM ' . TBL_MEMBERS . '
