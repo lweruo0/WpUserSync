@@ -564,6 +564,7 @@ final class UserWriteService
     private function updateBeitragsrolleBFV(int $userId, string $role, array $beitragsrollen, int $year): array
     {
         $akt_year  = (int) date('Y');
+        $today     = date('Y-m-d');
         $yearStart = sprintf('%04d-01-01', $year);
         $yearEnd   = sprintf('%04d-12-31', $year);
 
@@ -607,10 +608,10 @@ final class UserWriteService
                 $this->db->queryPrepared($sql, [$yearEnd, $userId, (int) $passivIds['Passivbeitrag'], $yearEnd]);
             }
 
-            // Assign passiv->aktiv Differenz for the transition (year-scoped)
-            $this->assignRoleToUserByName($userId, 'passiv->aktiv Differenz', $yearStart, $yearEnd);
-            // Assign Aktivbeitrag open-ended from 01.01. of current year
-            $this->assignRoleToUserByName($userId, 'Aktivbeitrag', $yearStart, '9999-12-31');
+            // Assign passiv->aktiv Differenz for the transition (year-scoped, start today)
+            $this->assignRoleToUserByName($userId, 'passiv->aktiv Differenz', $today, $yearEnd);
+            // Assign Aktivbeitrag open-ended from today
+            $this->assignRoleToUserByName($userId, 'Aktivbeitrag', $today, '9999-12-31');
         }
 
         // For Aktiv: undefer 'Erstbesatz' if it was previously deferred (start = 9999-01-01)
@@ -628,21 +629,23 @@ final class UserWriteService
                     $sql = 'UPDATE ' . TBL_MEMBERS . '
                             SET mem_begin = ?, mem_end = ?
                             WHERE mem_id = ?';
-                    $this->db->queryPrepared($sql, [$yearStart, $yearEnd, (int) $deferred['mem_id']]);
+                    $this->db->queryPrepared($sql, [$today, $yearEnd, (int) $deferred['mem_id']]);
                 }
             }
         }
 
-        // For Passiv: defer 'Erstbesatz' back if it is currently active for this year
+        // For Passiv: defer 'Erstbesatz' back if it is currently active (not already deferred)
         if ($role === 'Passiv') {
             $erstbesatzIds = $this->getBfvRoleIdsByName(['Erstbesatz']);
             if (!empty($erstbesatzIds['Erstbesatz'])) {
                 $sql = 'SELECT mem_id FROM ' . TBL_MEMBERS . '
                         WHERE mem_usr_id = ?
                           AND mem_rol_id = ?
-                          AND mem_begin = ?
+                          AND (mem_begin IS NULL OR mem_begin <= ?)
+                          AND (mem_end IS NULL OR mem_end >= ?)
+                          AND mem_begin <> ?
                         LIMIT 1';
-                $stmt = $this->db->queryPrepared($sql, [$userId, (int) $erstbesatzIds['Erstbesatz'], $yearStart]);
+                $stmt = $this->db->queryPrepared($sql, [$userId, (int) $erstbesatzIds['Erstbesatz'], $today, $today, '9999-01-01']);
                 $active = $stmt->fetch();
                 if ($active) {
                     $sql = 'UPDATE ' . TBL_MEMBERS . '
@@ -653,10 +656,35 @@ final class UserWriteService
             }
         }
 
-        // Assign all requested payroles with appropriate dates
+        // End active payroles for this role that are no longer in the new list
+        if (!empty($allowedPayroles)) {
+            $allowedPayroleIds = $this->getBfvRoleIdsByName($allowedPayroles);
+            $keepIds = [];
+            foreach ($beitragsrollen as $payrole) {
+                if (isset($allowedPayroleIds[$payrole])) {
+                    $keepIds[] = (int) $allowedPayroleIds[$payrole];
+                }
+            }
+            $removeIds = array_values(array_diff(
+                array_map('intval', array_values($allowedPayroleIds)),
+                $keepIds
+            ));
+            if (!empty($removeIds)) {
+                $inPlaceholders = implode(', ', array_fill(0, count($removeIds), '?'));
+                $sql = 'UPDATE ' . TBL_MEMBERS . '
+                        SET mem_end = ?
+                        WHERE mem_usr_id = ?
+                          AND mem_rol_id IN (' . $inPlaceholders . ')
+                          AND (mem_end IS NULL OR mem_end >= ?)';
+                $queryParams = array_merge([$today, $userId], $removeIds, [$today]);
+                $this->db->queryPrepared($sql, $queryParams);
+            }
+        }
+
+        // Assign all requested payroles; start date is today (not yyyy-01-01)
         $appliedPayroles = [];
         foreach ($beitragsrollen as $payrole) {
-            $payroleStart = $yearStart;
+            $payroleStart = $today;
             $payroleEnd   = '9999-12-31';
 
             if ($role === 'Passiv' && $payrole === 'Erstbesatz') {
