@@ -308,7 +308,34 @@ final class UserWriteService
         );
     }
 
+    /**
+     * POST /core/users/{uuid}/mitgliedschaftbfv
+     */
+    public function MitgliedschaftBFV(string $uuid): array
+    {
+        $payload = $this->payload;
+        $userId = $this->assertUUIDExists($uuid);
+        $payroles = is_array($payload['payroles'] ?? null) ? $payload['payroles'] : array();
+        $role  = isset($payload['role']) ? (string) $payload['role'] : '';
+        $year = isset($payload['year']) ? (int) $payload['year'] : (int) date('Y') + 1;
 
+        $allowedyears = array((int) date('Y') + 1, (int) date('Y'));
+        if ($role === '') {
+            throw new ApiException('No role provided.', 'validation_failed', 422);
+        }
+        if (!in_array($year, $allowedyears, true)) {
+            throw new ApiException('Invalid year provided.', 'validation_failed', 422);
+        }
+
+        $membershipResult = $this->updateMitgliedschaftBFV($userId, $role, $year);
+        $payroleResult   = $this->updateBeitragsrolleBFV($userId, $role, $payroles, $year);
+
+        return [
+            'status'     => 'success',
+            'membership' => $membershipResult,
+            'payroles'   => $payroleResult,
+        ];
+    }
 
 
     /**
@@ -343,7 +370,7 @@ final class UserWriteService
      *  param year: Jahr für das die Rolle gesetzt werden soll
      * 
      */
-    public function updateMitgliedschaftBFV(string $uuid, string $role, int $year): array
+    private function updateMitgliedschaftBFV(int $userId, string $role, int $year): array
     {
         $allowedRoles = array('Aktiv', 'Passiv', 'Jugend', 'Förder', 'Ehren');
         $role = trim($role);
@@ -357,7 +384,6 @@ final class UserWriteService
         }
 
         $akt_year = (int) date('Y');
-        $userId = $this->assertUUIDExists($uuid);
         $user = new User($this->db, $this->profileFields, $userId);
         $birthdayStr = (string) $user->getValue('BIRTHDAY');
 
@@ -490,49 +516,174 @@ final class UserWriteService
             'end_date' => '9999-12-31',
             'no_change' => false,
         );
-
     }
 
     /**
-     * Es soll eine Funktion geben, die die Beitragsrolle für ein Jahr setzt. Es gibt folgende Beitragsrollen:
+     * Es soll eine Funktion geben, die die Beitragsrolle für ein Jahr setzt. Es gibt folgende payroles:
      * 
-     *  ## Aktiv
+     *  ## bei Mitgliedschaft 'Aktive' sind folgende payroles möglich:
      *  'Bearbeitungsgebühr',
      *  'passiv->aktiv Differenz',
      *  'Erstbesatz',
      *  'Aktivbeitrag',
      *  'Bootsbeitrag',
      * 
-     * ## Jugend
+     * ## bei Mitgliedschaft 'Jugend' sind folgende payroles möglich:
      *  '2.Angel',
      *  'Jugendbeitrag',
      *  'Bearbeitungsgebühr',
      * 
-     * ## Förder
+     * ## bei Mitgliedschaft 'Förder' sind folgende payroles möglich:
      *  'Förderbeitrag 12€',
      *  'Förderbeitrag 20€',
      *  'Förderbeitrag 25€',
      *  'Förderbeitrag 50€',
      *  'Förderbeitrag 100€',
      * 
-     * ## Passiv
+     * ## bei Mitgliedschaft 'Passiv' sind folgende payroles möglich:
      *  'Passivbeitrag',
-     *  'Erstbesatz',
+     *  'Erstbesatz', --> hier muss der startdatum auf das Jahr 9999-1-1 gesetzt werden, damit die payrole nicht für das aktuelle Jahr berechnet wird.
      * 
      * 
      * 
-     * Wenn das aktuelle Jahr übergeben wird ist ja nur der Wechsel von Passiv nach aktiv Möglich. 
-     * Die Beitragsrolle Passiv muss dann zum 31.12. des aktuellen Jahres beendet werden und die Beitragsrolle 
+     * Wenn das aktuelle Jahr übergeben wird ist nur der Wechsel von Passiv nach aktiv möglich.
+     * Die Beitragsrolle Passiv muss dann zum 31.12. des aktuellen Jahres beendet werden und die Beitragsrolle
      * 'passiv->aktiv Differenz' gesetzt werden mit startdatum 01.01. des aktuellen Jahres und enddatum 31.12. des aktuellen Jahres, damit die Beitragsdifferenz korrekt berechnet werden kann.
      * 'Aktivbeitrag' muss zum 01.01. des aktuellen Jahres gesetzt werden. enddatum unbefristet 9999-12-31
      * Wenn das aktuelle Jahr übergeben wird, und die Aktuelle Rolle nicht 'Aktiv' ist, muss eine Fehlermeldung ausgegeben werden, 
-     * dass die Beitragsrolle für das aktuelle Jahr nur gesetzt werden kann, wenn die Rolle 'Aktiv' ist.
+     * dass die payrole für das aktuelle Jahr nur gesetzt werden kann, wenn die Rolle 'Aktiv' ist.
+     * 
+     * Wenn die Rolle Mitgliedschaft "Aktiv" ist, muss geprüft werden ob am Mitglied ein payrole "Erstbesatz" gestundet wurde (schon gesetzt ist mit einem Startdatum von 9999-1-1. 
+     * Wenn ja, muss das startdatum der Rolle Erstbesatz auf den year-01-01 und Enddatum year-12-31 gesetzt werden (Stundung entfernen).
+     * Wenn die Rolle Mitgliedschaft "Passiv" ist, muss geprüft werden ob am Mitglied ein payrole "Erstbesatz" gesetzt ist mit startdatum der Rolle Erstbesatz auf year-01-01 und Enddatum year-12-31 gesetzt werden 
+     * 
      * 
      **/
 
-    private function updateBeitragsrolleBFV(string $uuid, string $role, string $beitragsrollen, int $year): array
+    private function updateBeitragsrolleBFV(int $userId, string $role, array $beitragsrollen, int $year): array
     {
+        $akt_year  = (int) date('Y');
+        $yearStart = sprintf('%04d-01-01', $year);
+        $yearEnd   = sprintf('%04d-12-31', $year);
 
+        // Allowed payroles per membership role
+        $allowedPayrolesByRole = [
+            'Aktiv'  => ['Aktivbeitrag', 'Bearbeitungsgebühr', 'passiv->aktiv Differenz', 'Erstbesatz', 'Bootsbeitrag'],
+            'Jugend' => ['Jugendbeitrag', '2.Angel', 'Bearbeitungsgebühr'],
+            'Förder' => ['Förderbeitrag 12€', 'Förderbeitrag 20€', 'Förderbeitrag 25€', 'Förderbeitrag 50€', 'Förderbeitrag 100€'],
+            'Passiv' => ['Passivbeitrag', 'Erstbesatz'],
+            'Ehren'  => ['Ehrenbeitrag'],
+        ];
+
+        $allowedPayroles = $allowedPayrolesByRole[$role] ?? [];
+
+        foreach ($beitragsrollen as $payrole) {
+            if (!in_array($payrole, $allowedPayroles, true)) {
+                throw new ApiException(
+                    'Payrole "' . $payrole . '" is not allowed for membership role "' . $role . '".',
+                    'validation_failed', 422
+                );
+            }
+        }
+
+        // Current year: only Passiv -> Aktiv transition is allowed for payrole updates
+        if ($year === $akt_year) {
+            if ($role !== 'Aktiv') {
+                throw new ApiException(
+                    'For the current year, payroles can only be set when the membership role is "Aktiv".',
+                    'validation_failed', 422
+                );
+            }
+
+            // End Passivbeitrag at 31.12. of current year
+            $passivIds = $this->getBfvRoleIdsByName(['Passivbeitrag']);
+            if (!empty($passivIds['Passivbeitrag'])) {
+                $sql = 'UPDATE ' . TBL_MEMBERS . '
+                        SET mem_end = ?
+                        WHERE mem_usr_id = ?
+                          AND mem_rol_id = ?
+                          AND (mem_end IS NULL OR mem_end > ?)';
+                $this->db->queryPrepared($sql, [$yearEnd, $userId, (int) $passivIds['Passivbeitrag'], $yearEnd]);
+            }
+
+            // Assign passiv->aktiv Differenz for the transition (year-scoped)
+            $this->assignRoleToUserByName($userId, 'passiv->aktiv Differenz', $yearStart, $yearEnd);
+            // Assign Aktivbeitrag open-ended from 01.01. of current year
+            $this->assignRoleToUserByName($userId, 'Aktivbeitrag', $yearStart, '9999-12-31');
+        }
+
+        // For Aktiv: undefer 'Erstbesatz' if it was previously deferred (start = 9999-01-01)
+        if ($role === 'Aktiv') {
+            $erstbesatzIds = $this->getBfvRoleIdsByName(['Erstbesatz']);
+            if (!empty($erstbesatzIds['Erstbesatz'])) {
+                $sql = 'SELECT mem_id FROM ' . TBL_MEMBERS . '
+                        WHERE mem_usr_id = ?
+                          AND mem_rol_id = ?
+                          AND mem_begin = ?
+                        LIMIT 1';
+                $stmt = $this->db->queryPrepared($sql, [$userId, (int) $erstbesatzIds['Erstbesatz'], '9999-01-01']);
+                $deferred = $stmt->fetch();
+                if ($deferred) {
+                    $sql = 'UPDATE ' . TBL_MEMBERS . '
+                            SET mem_begin = ?, mem_end = ?
+                            WHERE mem_id = ?';
+                    $this->db->queryPrepared($sql, [$yearStart, $yearEnd, (int) $deferred['mem_id']]);
+                }
+            }
+        }
+
+        // For Passiv: defer 'Erstbesatz' back if it is currently active for this year
+        if ($role === 'Passiv') {
+            $erstbesatzIds = $this->getBfvRoleIdsByName(['Erstbesatz']);
+            if (!empty($erstbesatzIds['Erstbesatz'])) {
+                $sql = 'SELECT mem_id FROM ' . TBL_MEMBERS . '
+                        WHERE mem_usr_id = ?
+                          AND mem_rol_id = ?
+                          AND mem_begin = ?
+                        LIMIT 1';
+                $stmt = $this->db->queryPrepared($sql, [$userId, (int) $erstbesatzIds['Erstbesatz'], $yearStart]);
+                $active = $stmt->fetch();
+                if ($active) {
+                    $sql = 'UPDATE ' . TBL_MEMBERS . '
+                            SET mem_begin = ?, mem_end = ?
+                            WHERE mem_id = ?';
+                    $this->db->queryPrepared($sql, ['9999-01-01', '9999-12-31', (int) $active['mem_id']]);
+                }
+            }
+        }
+
+        // Assign all requested payroles with appropriate dates
+        $appliedPayroles = [];
+        foreach ($beitragsrollen as $payrole) {
+            $payroleStart = $yearStart;
+            $payroleEnd   = '9999-12-31';
+
+            if ($role === 'Passiv' && $payrole === 'Erstbesatz') {
+                // Defer: not billed in the target year
+                $payroleStart = '9999-01-01';
+                $payroleEnd   = '9999-12-31';
+            } elseif ($payrole === 'Bearbeitungsgebühr') {
+                // One-time fee, scoped to the year
+                $payroleEnd = $yearEnd;
+            }
+
+            $roleId = $this->assignRoleToUserByName($userId, $payrole, $payroleStart, $payroleEnd);
+            if ($roleId !== null) {
+                $appliedPayroles[] = [
+                    'payrole' => $payrole,
+                    'start'   => $payroleStart,
+                    'end'     => $payroleEnd,
+                ];
+            }
+        }
+
+        return [
+            'status'           => 'success',
+            'user_id'          => $userId,
+            'role'             => $role,
+            'year'             => $year,
+            'applied_payroles' => $appliedPayroles,
+        ];
     }
 
 
