@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace WpUserSync\classes\Service;
 use Admidio\Users\Entity\User;
+use Admidio\Users\Entity\Role;
 use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Infrastructure\Database;
 
