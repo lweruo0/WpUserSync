@@ -543,6 +543,7 @@ final class UserWriteService
      * 
      * ## bei Mitgliedschaft 'Passiv' sind folgende payroles möglich:
      *  'Passivbeitrag',
+     *  'Bearbeitungsgebühr',
      *  'Erstbesatz', --> hier muss der startdatum auf das Jahr 9999-1-1 gesetzt werden, damit die payrole nicht für das aktuelle Jahr berechnet wird.
      * 
      * 
@@ -573,7 +574,7 @@ final class UserWriteService
             'Aktiv'  => ['Aktivbeitrag', 'Bearbeitungsgebühr', 'passiv->aktiv Differenz', 'Erstbesatz', 'Bootsbeitrag'],
             'Jugend' => ['Jugendbeitrag', '2.Angel', 'Bearbeitungsgebühr'],
             'Förder' => ['Förderbeitrag 12€', 'Förderbeitrag 20€', 'Förderbeitrag 25€', 'Förderbeitrag 50€', 'Förderbeitrag 100€'],
-            'Passiv' => ['Passivbeitrag', 'Erstbesatz'],
+            'Passiv' => ['Passivbeitrag', 'Erstbesatz', 'Bearbeitungsgebühr'],
             'Ehren'  => ['Ehrenbeitrag'],
         ];
 
