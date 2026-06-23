@@ -656,27 +656,16 @@ final class UserWriteService
             }
         }
 
-        // End active payroles for this role that are no longer in the new list
-        if (!empty($allowedPayroles)) {
-            $allowedPayroleIds = $this->getBfvRoleIdsByName($allowedPayroles);
-            $keepIds = [];
-            foreach ($beitragsrollen as $payrole) {
-                if (isset($allowedPayroleIds[$payrole])) {
-                    $keepIds[] = (int) $allowedPayroleIds[$payrole];
-                }
-            }
-            $removeIds = array_values(array_diff(
-                array_map('intval', array_values($allowedPayroleIds)),
-                $keepIds
-            ));
-            if (!empty($removeIds)) {
-                $inPlaceholders = implode(', ', array_fill(0, count($removeIds), '?'));
-                $sql = 'UPDATE ' . TBL_MEMBERS . '
-                        SET mem_end = ?
+        // Delete all payroles for this role upfront (except Erstbesatz, handled separately)
+        $payrolesToDelete = array_filter($allowedPayroles, fn($p) => $p !== 'Erstbesatz');
+        if (!empty($payrolesToDelete)) {
+            $deleteIds = $this->getBfvRoleIdsByName(array_values($payrolesToDelete));
+            if (!empty($deleteIds)) {
+                $inPlaceholders = implode(', ', array_fill(0, count($deleteIds), '?'));
+                $sql = 'DELETE FROM ' . TBL_MEMBERS . '
                         WHERE mem_usr_id = ?
-                          AND mem_rol_id IN (' . $inPlaceholders . ')
-                          AND (mem_end IS NULL OR mem_end >= ?)';
-                $queryParams = array_merge([$today, $userId], $removeIds, [$today]);
+                          AND mem_rol_id IN (' . $inPlaceholders . ')';
+                $queryParams = array_merge([$userId], array_map('intval', array_values($deleteIds)));
                 $this->db->queryPrepared($sql, $queryParams);
             }
         }
