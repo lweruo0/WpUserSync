@@ -5,7 +5,7 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 ## Enthalten
 
 - `index.php` – Infoseite mit Konfigurationsstatus
-- `api/api.php` – RESTful JSON-API für Benutzer, Felder, Listen und Mitgliedschaften (via `.htaccess`)
+- `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien und Arbeitsdienste (via `.htaccess`)
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
 - `bootstrap-plugin.php` – lokaler PSR-4-Autoloader
 
@@ -37,7 +37,7 @@ $plg_wpusersync_nonce_max_age = 300;
 ## API-Authentifizierung
 
 ```http
-POST /adm_plugins/WpUserSync/api/write_user.php
+GET /adm_plugins/wpusersync/api/v1/core/users/{uuid}
 X-Api-Client-Id: <feste_client_id>
 X-Api-Timestamp: <unixzeit>
 X-Api-Nonce: <zufaelliger_nonce>
@@ -66,38 +66,41 @@ BODY_SHA256
 
 **Alle Endpunkte erfordern HMAC-Request-Signing** (siehe Authentifizierung oben).
 
-### Benutzer verwalten
+### Benutzer und Stammdaten
 
 - `GET /core/users` – Liste aller Benutzer (mit `?limit=50&offset=0`)
-- `GET /core/users/{userId}` – Benutzerdetails auslesen
-- `POST /core/users/{userId}` – Benutzer aktualisieren
+- `GET /core/users/{uuid}` – Benutzer anhand seiner UUID auslesen
+- `GET /core/search?firstName=...&lastName=...&birthday=...` – Benutzer anhand Name und Geburtstag suchen
+- `POST /core/users/new` – Benutzer anlegen (erfordert `firstName`, `lastName` und `birthday`)
+- `GET /core/roles` – Rollen auflisten
+- `GET /core/categories` – Kategorien auflisten
+- `GET /core/categories/{type}` – Kategorien nach Typ auflisten
 
 ### Benutzerdefinierte Felder
 
-- `GET /core/users/{userId}/fields` – Alle Custom-Fields auslesen
-- `GET /core/users/{userId}/fields/{name}` – Einzelnes Custom-Field auslesen
-- `POST /core/users/{userId}/fields` – Custom-Field setzen (mit `{"name":"xxx","value":"yyy"}`)
-- `POST /core/users/{userId}/fields/{name}` – Custom-Field byName setzen (mit `{"value":"yyy"}`)
+- `GET /core/users/{uuid}/fields` – Profilfelder des Benutzers auslesen
+- `GET /core/users/{uuid}/fields/{name}` – Einzelnes Profilfeld auslesen
+- `POST /core/users/{uuid}/fields` – Profilfelder setzen (mit `{"data":{"FELDNAME":"Wert"}}`)
+- `POST /core/users/{uuid}/fields/{name}` – Einzelnes Profilfeld setzen (mit `{"data":"Wert"}`)
 
-### Listen
-- `GET /core/users/{userId}/lists` – Listen, in denen Benutzer aktiv ist
-- `GET /core/users/{userId}/lists/{listId}` – Listendetails (nur wenn Mitglied)
+### Mitgliedschaften und Arbeitsdienste
 
-### Mitgliedschaften
+- `GET /core/users/{uuid}/memberships` – Mitgliedschaften des Benutzers auslesen
+- `GET /core/users/{uuid}/memberships/{year}` – Mitgliedschaften für ein Jahr auslesen
+- `POST /core/users/{uuid}/memberships` – Rollenmitgliedschaften zuweisen (mit `{"roles":{"Rollenname":{"start_date":"YYYY-MM-DD","end_date":"YYYY-MM-DD"}}}`)
+- `POST /core/users/{uuid}/mitgliedschaftbfv` – BFV-Mitgliedschaft und Beitragsrollen verwalten
+- `GET /core/users/{uuid}/arbeitsdienst` – Arbeitsdienste auslesen
+- `GET /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienste für ein Jahr auslesen
+- `POST /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienst erfassen oder aktualisieren
+- `DELETE /core/users/{uuid}/arbeitsdienst/{id}` – Arbeitsdienst löschen
 
-- `GET /core/users/{userId}/memberships` – Alle Mitgliedschaften des Benutzers
-- `GET /core/users/{userId}/memberships/{memId}` – Einzelne Mitgliedschaft auslesen
-- `POST /core/users/{userId}/memberships/{memId}` – Mitgliedschaft aktualisieren (mit `{"beginDate":"...","endDate":"..."}`)
-- `GET /core/users/{userId}/memberships/role/{roleId}` – Mitgliedschaften für spezifische Rolle
-- `POST /core/users/{userId}/memberships/role/{roleId}` – Mitgliedschaft für Rolle erstellen
-- `GET /core/users/{userId}/memberships/organization/{orgId}` – Mitgliedschaften für Org
-- `POST /core/users/{userId}/memberships/organization/{orgId}` – Mitgliedschaft für Org erstellen
+Schreibzugriffe verwenden JSON im Request-Body. Der Router unterstützt nur die oben aufgeführten HTTP-Methoden und Routen; nicht aufgeführte Routen antworten mit `404`.
 
 ### Beispiel-Requests
 
 **Benutzer auslesen:**
 ```bash
-curl -X GET https://example.org/adm_plugins/wpusersync/api/v1/core/users/42 \
+curl -X GET https://example.org/adm_plugins/wpusersync/api/v1/core/users/00000000-0000-0000-0000-000000000000 \
   -H "X-Api-Client-Id: wordpress-prod" \
   -H "X-Api-Timestamp: $(date +%s)" \
   -H "X-Api-Nonce: $(openssl rand -hex 16)" \
@@ -108,8 +111,8 @@ curl -X GET https://example.org/adm_plugins/wpusersync/api/v1/core/users/42 \
 
 **Custom-Field setzen:**
 ```bash
-PAYLOAD='{"value":"neuer-wert"}'
-curl -X POST https://example.org/adm_plugins/wpusersync/api/v1/core/users/42/fields/mein_feld \
+PAYLOAD='{"data":"neuer-wert"}'
+curl -X POST https://example.org/adm_plugins/wpusersync/api/v1/core/users/00000000-0000-0000-0000-000000000000/fields/mein_feld \
   -H "X-Api-Client-Id: wordpress-prod" \
   -H "X-Api-Timestamp: $(date +%s)" \
   -H "X-Api-Nonce: $(openssl rand -hex 16)" \
@@ -118,4 +121,3 @@ curl -X POST https://example.org/adm_plugins/wpusersync/api/v1/core/users/42/fie
   -H "Content-Type: application/json" \
   -d "$PAYLOAD"
 ```
-

@@ -69,8 +69,6 @@ final class NonceValidator
             throw new ApiException('API nonce expired.', 'nonce_expired ', 401);
         }
 
-        self::assertNonceUnused($clientId, $nonce, $timestamp, $maxAgeSeconds);
-
         $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
         $path = self::getCanonicalPath();
         $canonical = implode("\n", array($method, $path, $clientId, $timestamp, $nonce, $bodyHash));
@@ -79,6 +77,9 @@ final class NonceValidator
         if (!hash_equals($expectedSignature, $signature)) {
             throw new ApiException('Invalid API signature.', 'invalid_signature', 401);
         }
+
+        self::assertNonceUnused($clientId, $nonce, $timestamp, $maxAgeSeconds);
+
     }
 
     private static function deriveKey(string $apiSecret): string

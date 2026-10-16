@@ -147,14 +147,22 @@ final class UserWriteService
         $pad_id_found = $stmt->fetch();        
 
         if (!empty($pad_id)) {
+            // Existenz vorab prüfen, da rowCount() bei unveränderten Zeilen 0 liefern kann.
+            $sql = 'SELECT pad_id FROM ' . TBL_USER_ARBEITSDIENST . '
+                    WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
+            $stmt = $this->db->queryPrepared($sql, [(int) $pad_id, $userId, (int) $this->gCurrentOrgId]);
+            if (!$stmt->fetch()) {
+                throw new ApiException('Arbeitsdienst entry not found.', 'not_found', 404);
+            }
+
             $sql = 'UPDATE ' . TBL_USER_ARBEITSDIENST . '
                     SET pad_cat_id = ? , 
                         pad_pro_id = ? , 
                         pad_date = ? , 
                         pad_name = ? , 
                         pad_hours = ?
-                    WHERE pad_id = ?';
-            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, $pad_id]);
+                    WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
+            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, (int) $pad_id, $userId, (int) $this->gCurrentOrgId]);
 
         } elseif (!$check_dublicates || empty($pad_id_found)) {
             $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
@@ -192,8 +200,11 @@ final class UserWriteService
         }
 
         // Delete the record with the given ID
-        $sql = 'DELETE FROM ' . TBL_USER_ARBEITSDIENST . ' WHERE pad_id = ? AND pad_user_id = ?';
-        $stmt = $this->db->queryPrepared($sql, [$id, $userId]);
+        $sql = 'DELETE FROM ' . TBL_USER_ARBEITSDIENST . ' WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
+        $stmt = $this->db->queryPrepared($sql, [$id, $userId, (int) $this->gCurrentOrgId]);
+        if ($stmt->rowCount() === 0) {
+            throw new ApiException('Arbeitsdienst entry not found.', 'not_found', 404);
+        }
 
         return [
             'status' => 'success',
@@ -248,14 +259,11 @@ final class UserWriteService
         }
 
         $existingUserId = $this->findUserIdbyFirstnameLastnameBirthday($firstName, $lastName, $birthday);
-        $existingUserUuid = $this->getuuid($existingUserId);
-
-
         if ($existingUserId) {
             return [
                 'status' => 'success',
                 'message' => 'User already exists.',
-                'uuid' => $existingUserUuid,
+                'uuid' => $this->getuuid($existingUserId),
             ];
         }
 
@@ -270,7 +278,7 @@ final class UserWriteService
         return [
             'status' => 'success',
             'message' => 'User created successfully.',
-            'uuid' => $usr_id = (int) $user->getValue('usr_uuid')  
+            'uuid' => $user->getValue('usr_uuid')  
         ];
     }
 

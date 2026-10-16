@@ -22,9 +22,32 @@ try {
         throw new ApiException('Plugin is disabled.', 'plugin_disabled', 403);
     }
 
-    $rawBody = file_get_contents('php://input');
+    $maxBodyBytes = 1024 * 1024;
+    $contentLength = $_SERVER['CONTENT_LENGTH'] ?? null;
+
+    if (
+        $contentLength !== null
+        && ctype_digit((string) $contentLength)
+        && (int) $contentLength > $maxBodyBytes
+    ) {
+        throw new ApiException('Request body too large.', 'payload_too_large', 413);
+    }
+
+    // Höchstens ein Byte über dem Limit lesen, damit ein zu großer Body erkannt wird.
+    $rawBody = file_get_contents(
+        'php://input',
+        false,
+        null,
+        0,
+        $maxBodyBytes + 1
+    );
+
     if ($rawBody === false) {
-        $rawBody = '';
+        throw new ApiException('Could not read request body.', 'request_body_read_failed', 400);
+    }
+
+    if (strlen($rawBody) > $maxBodyBytes) {
+        throw new ApiException('Request body too large.', 'payload_too_large', 413);
     }
 
     NonceValidator::assertValidSignature(

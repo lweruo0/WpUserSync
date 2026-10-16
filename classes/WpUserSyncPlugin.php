@@ -14,17 +14,12 @@ final class WpUserSyncPlugin
 
     public function render(): string
     {
-        $pluginName = basename($this->pluginDir);
-        $writeEndpoint = $pluginName . '/api/write_user.php';
-        $readEndpoint = $pluginName . '/api/read_user.php';
-
         $html = '';
         //header('Content-Type: text/html; charset=utf-8');
         $html.='<div class="admidio-plugin-content">';
         $html.= '<h3>WordPress Benutzer-Synchronisation</h3>';
         $html.= '<p>Dieses Plugin stellt JSON-Endpoints bereit, um Benutzer aus WordPress in Admidio anzulegen, zu aktualisieren und auszulesen.</p>';
-        $html.= '<p><strong>Schreiben:</strong> <code>' . htmlspecialchars($writeEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p>';
-        $html.= '<p><strong>Lesen:</strong> <code>' . htmlspecialchars($readEndpoint, ENT_QUOTES, 'UTF-8') . '</code></p></br>';
+        $html.= '<p><strong>API-Basis:</strong> <code>/adm_plugins/wpusersync/api/v1/</code></p>';
 
         $html.= '<h4>Konfigurationsparameter</h4>';
         $html.= '<p>Die folgenden globalen Variablen werden aus <code>adm_my_files/config.php</code> gelesen:</p>';
@@ -38,7 +33,7 @@ final class WpUserSyncPlugin
             'plg_wpusersync_enabled' => $plg_wpusersync_enabled,
             'plg_wpusersync_require_https' => $plg_wpusersync_require_https,
             'plg_wpusersync_assign_default_roles' => $plg_wpusersync_assign_default_roles,
-            'plg_wpusersync_api_secret' => $plg_wpusersync_api_secret,
+            'plg_wpusersync_api_secret' => empty($plg_wpusersync_api_secret) ? 'nicht gesetzt' : 'gesetzt',
             'plg_wpusersync_nonce_max_age' => $plg_wpusersync_nonce_max_age,
         );
 
