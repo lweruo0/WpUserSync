@@ -19,12 +19,14 @@ final class UserReadService
     private ProfileFields $profileFields;
     private array $query;
     private array $existingFieldNames = array();
+    private array $readFieldAllowlist;
 
-    public function __construct(Database $db, ProfileFields $profileFields, array $query = [])
+    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $readFieldAllowlist = [])
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
         $this->query = $query;
+        $this->readFieldAllowlist = $readFieldAllowlist;
         foreach ($this->profileFields->getProfileFields() as $field) {
             $this->existingFieldNames[] = $field->getValue('usf_name_intern');
         }
@@ -138,7 +140,7 @@ final class UserReadService
         $users = [];
         $row = $result->fetch();
         if ($row) {
-            return [
+            return $this->filterProfileFieldResponse([
                 'userId' => (int) $row['usr_id'],
                 'uuid' => $row['usr_uuid'],
                 'loginName' => (string) $row['usr_login_name'],
@@ -146,9 +148,9 @@ final class UserReadService
                 'lastName' => (string) ($row['last_name'] ?? ''),
                 'birthday' => (string) ($row['birthday'] ?? ''),
                 'exists' => true
-            ];
+            ]);
         } else {
-            return [
+            return $this->filterProfileFieldResponse([
                 'userId' => 0,
                 'useruuid' => '',
                 'loginName' => '',
@@ -156,7 +158,7 @@ final class UserReadService
                 'lastName' => '',
                 'birthday' => '',
                 'exists' => false
-            ];
+            ]);
         }
     }
 
@@ -199,14 +201,21 @@ final class UserReadService
         $result = $this->db->queryPrepared($sql, $queryParams);
         $users = [];
         while ($row = $result->fetch()) {
-            $users[] = [
+            $user = [
                 'usr_id' => (int) $row['usr_id'],
                 'uuid' => $row['usr_uuid'],
                 'usr_login_name' => (string) $row['usr_login_name'],
-                'FIRST_NAME' => (string) ($row['first_name'] ?? ''),
-                'LAST_NAME' => (string) ($row['last_name'] ?? ''),
-                'BIRTHDAY' => (string) ($row['birthday'] ?? ''),
             ];
+            if (in_array('FIRST_NAME', $this->readFieldAllowlist, true)) {
+                $user['FIRST_NAME'] = (string) ($row['first_name'] ?? '');
+            }
+            if (in_array('LAST_NAME', $this->readFieldAllowlist, true)) {
+                $user['LAST_NAME'] = (string) ($row['last_name'] ?? '');
+            }
+            if (in_array('BIRTHDAY', $this->readFieldAllowlist, true)) {
+                $user['BIRTHDAY'] = (string) ($row['birthday'] ?? '');
+            }
+            $users[] = $user;
         }
 
         return [
@@ -245,7 +254,9 @@ final class UserReadService
         $fields = array();
 
         foreach ($this->existingFieldNames as $fieldName) {
-            $fields[$fieldName] = $user->getValue($fieldName, 'database');
+            if (in_array($fieldName, $this->readFieldAllowlist, true)) {
+                $fields[$fieldName] = $user->getValue($fieldName, 'database');
+            }
         }
 
         return array(
@@ -264,8 +275,11 @@ final class UserReadService
 
         $user = new User($this->db, $this->profileFields, $userId);
 
-        if (!in_array($name, $this->existingFieldNames)){
-            throw new ApiException('Fieldname not found.', 'field_not_found', 404);            
+        if (!in_array($name, $this->existingFieldNames, true)) {
+            throw new ApiException('Fieldname not found.', 'field_not_found', 404);
+        }
+        if (!in_array($name, $this->readFieldAllowlist, true)) {
+            throw new ApiException('Reading this profile field is not allowed.', 'field_not_allowed', 403);
         }
 
         return array(
@@ -375,6 +389,22 @@ final class UserReadService
             'data' => $roles,
             'sumworking' => $membersworkinfo
         );
+    }
+
+    private function filterProfileFieldResponse(array $response): array
+    {
+        $fieldKeys = array(
+            'firstName' => 'FIRST_NAME',
+            'lastName' => 'LAST_NAME',
+            'birthday' => 'BIRTHDAY',
+        );
+        foreach ($fieldKeys as $responseKey => $fieldName) {
+            if (!in_array($fieldName, $this->readFieldAllowlist, true)) {
+                unset($response[$responseKey]);
+            }
+        }
+
+        return $response;
     }
 
     private function assertUserExists(int $userId): void

@@ -66,6 +66,12 @@ BODY_SHA256
 
 **Alle Endpunkte erfordern HMAC-Request-Signing** (siehe Authentifizierung oben).
 
+### Profilfeld-Allowlist
+
+Die Allowlist wird auf der Administratorseite `/adm_plugins/wpusersync/index.php` über getrennte Checkboxen für Lese- und Schreibzugriff gepflegt. Beim Speichern legt das Plugin `adm_my_files/wpusersync-profile-fields.json` an beziehungsweise aktualisiert diese Datei. Der PHP-Prozess muss Schreibrechte auf `adm_my_files` haben.
+
+Eine fehlende Allowlist-Datei sperrt Profilfeld-Lese- und Schreibzugriffe standardmäßig (fail-closed). Für `POST /core/users/new` müssen `FIRST_NAME`, `LAST_NAME` und `BIRTHDAY` in der Schreib-Allowlist aktiviert sein. Benutzerlisten und Suchergebnisse geben diese Profilfelder nur zurück, wenn sie jeweils in der Lese-Allowlist stehen.
+
 ### Benutzer und Stammdaten
 
 - `GET /core/users` – Liste aller Benutzer (mit `?limit=50&offset=0`)

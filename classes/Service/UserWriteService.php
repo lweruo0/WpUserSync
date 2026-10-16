@@ -16,13 +16,15 @@ final class UserWriteService
     private ProfileFields $profileFields;
     private array $query;
     private array $payload;
+    private array $writeFieldAllowlist;
+    private array $existingFieldNames = array();
     private int $gCurrentOrgId;
     private Database $gDb;
     private ProfileFields $gProfileFields;
 
 
     
-    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [])
+    public function __construct(Database $db, ProfileFields $profileFields, array $query = [], array $payload = [], array $writeFieldAllowlist = [])
     {
         $this->db = $db;
         $this->profileFields = $profileFields;
@@ -31,6 +33,10 @@ final class UserWriteService
         $this->gDb = $GLOBALS['gDb'];
         $this->query = $query;
         $this->payload = $payload;
+        $this->writeFieldAllowlist = $writeFieldAllowlist;
+        foreach ($this->profileFields->getProfileFields() as $field) {
+            $this->existingFieldNames[] = $field->getValue('usf_name_intern');
+        }
     }
 
     /**
@@ -45,6 +51,13 @@ final class UserWriteService
 
         if (!is_array($payload['data'] ?? null)) {
             throw new ApiException('data value must be an array.', 'validation_failed', 422);
+        }
+
+        foreach ($payload['data'] as $fieldName => $value) {
+            if (!is_string($fieldName)) {
+                throw new ApiException('Profile field names must be strings.', 'validation_failed', 422);
+            }
+            $this->assertFieldWritable($fieldName);
         }
 
         $resultdata = [];
@@ -80,6 +93,7 @@ final class UserWriteService
         if ($name === '') {
             throw new ApiException('Field name is required.', 'validation_failed', 422);
         }
+        $this->assertFieldWritable($name);
 
         $user = new User($this->db, $this->profileFields, $userId);
         $user->setValue($name, $value);
@@ -257,6 +271,8 @@ final class UserWriteService
         if (!$firstName || !$lastName || !$birthday) {
             throw new ApiException('firstName, lastName and birthday are required.', 'validation_failed', 422);
         }
+
+        $this->assertFieldsWritable(array('FIRST_NAME', 'LAST_NAME', 'BIRTHDAY'));
 
         $existingUserId = $this->findUserIdbyFirstnameLastnameBirthday($firstName, $lastName, $birthday);
         if ($existingUserId) {
@@ -862,6 +878,24 @@ final class UserWriteService
         return $row ? $row : null;
     }
 
+
+    private function assertFieldWritable(string $fieldName): void
+    {
+        if (!in_array($fieldName, $this->existingFieldNames, true)) {
+            throw new ApiException('Profile field not found.', 'field_not_found', 404);
+        }
+
+        $this->assertFieldsWritable(array($fieldName));
+    }
+
+    private function assertFieldsWritable(array $fieldNames): void
+    {
+        foreach ($fieldNames as $fieldName) {
+            if (!in_array($fieldName, $this->writeFieldAllowlist, true)) {
+                throw new ApiException('Writing this profile field is not allowed.', 'field_not_allowed', 403);
+            }
+        }
+    }
 
     private function getuuid(int $userId): string
     {

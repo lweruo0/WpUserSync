@@ -5,6 +5,7 @@ require_once __DIR__ . '/../bootstrap-admidio.php';
 require_once __DIR__ . '/../bootstrap-plugin.php';
 
 use WpUserSync\classes\Service\ApiException;
+use WpUserSync\classes\Service\FieldAllowlist;
 use WpUserSync\classes\Service\ApiRouter;
 use WpUserSync\classes\Service\NonceValidator;
 use WpUserSync\classes\Service\JsonResponder;
@@ -65,12 +66,13 @@ try {
         $payload = array();
     }    
     global $gDb, $gProfileFields; // Assuming $gDb is defined in the bootstrap files
+    $allowlists = (new FieldAllowlist(FieldAllowlist::getSettingsPath(dirname(__DIR__))))->load();
     if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'GET') {
-        $Service = new UserReadService($gDb, $gProfileFields, $_GET);
+        $Service = new UserReadService($gDb, $gProfileFields, $_GET, $allowlists['read']);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'POST') {
-        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
+        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload, $allowlists['write']);
     } else if (($_SERVER['REQUEST_METHOD'] ?? 'GET') == 'DELETE') {
-        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload);
+        $Service = new UserWriteService($gDb, $gProfileFields, $_POST, $payload, $allowlists['write']);
     }
      else {
         throw new ApiException('Only GET/POST/DELETE methods are allowed.', 'method_not_allowed', 405);
