@@ -264,9 +264,9 @@ final class UserWriteService
     public function createUser(): array
     {
         $payload = $this->payload;
-        $firstName = $payload['firstName'] ?? null;
-        $lastName = $payload['lastName'] ?? null;
-        $birthday = $payload['birthday'] ?? null;
+        $firstName = $payload['FIRST_NAME'] ?? ($payload['firstName'] ?? null);
+        $lastName = $payload['LAST_NAME'] ?? ($payload['lastName'] ?? null);
+        $birthday = $payload['BIRTHDAY'] ?? ($payload['birthday'] ?? null);
 
         if (!$firstName || !$lastName || !$birthday) {
             throw new ApiException('firstName, lastName and birthday are required.', 'validation_failed', 422);
