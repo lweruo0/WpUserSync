@@ -285,12 +285,11 @@ final class UserWriteService
 
         // Create a new user
         $user = new User($this->db, $this->profileFields);
-        $user->assignDefaultRoles();
         $user->setValue('FIRST_NAME', $firstName);
         $user->setValue('LAST_NAME', $lastName);
         $user->setValue('BIRTHDAY', $birthday);
         $user->save();
-
+        $user->assignDefaultRoles();
         return [
             'status' => 'success',
             'message' => 'User created successfully.',
