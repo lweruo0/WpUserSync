@@ -891,7 +891,7 @@ final class UserWriteService
     {
         foreach ($fieldNames as $fieldName) {
             if (!in_array($fieldName, $this->writeFieldAllowlist, true)) {
-                throw new ApiException('Writing this profile field is not allowed.', 'field_not_allowed', 403);
+                throw new ApiException('Writing profile field '.$fieldName.' is not allowed.', 'field_not_allowed', 403);
             }
         }
     }
