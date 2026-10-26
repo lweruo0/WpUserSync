@@ -98,7 +98,7 @@ final class UserReadService
         if ($firstName === '' || $lastName === '' || $birthday === '') {
                 return [
                         'userId' => 0,
-                        'useruuid' => '',
+                        'uuid' => '',
                         'loginName' => '',
                         'firstName' => '',
                         'lastName' => '',
@@ -152,7 +152,7 @@ final class UserReadService
         } else {
             return $this->filterProfileFieldResponse([
                 'userId' => 0,
-                'useruuid' => '',
+                'uuid' => '',
                 'loginName' => '',
                 'firstName' => '',
                 'lastName' => '',
