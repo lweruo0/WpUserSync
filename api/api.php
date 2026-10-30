@@ -7,8 +7,10 @@ require_once __DIR__ . '/../bootstrap-plugin.php';
 use WpUserSync\classes\Service\ApiException;
 use WpUserSync\classes\Service\FieldAllowlist;
 use WpUserSync\classes\Service\ApiRouter;
+use WpUserSync\classes\Service\ApiUser;
 use WpUserSync\classes\Service\NonceValidator;
 use WpUserSync\classes\Service\JsonResponder;
+use WpUserSync\classes\Service\MembershipTypeService;
 use WpUserSync\classes\Service\UserReadService;
 use WpUserSync\classes\Service\UserWriteService;
 
@@ -16,6 +18,8 @@ global $plg_wpusersync_enabled;
 global $plg_wpusersync_api_secret;
 global $plg_wpusersync_nonce_max_age;
 global $plg_wpusersync_require_https;
+global $plg_wpusersync_api_user_uuid;
+global $plg_wpusersync_admhistory_dir;
 
 try {
 
@@ -61,6 +65,14 @@ try {
         throw new ApiException('HTTPS is required.', 'https_required', 400);
     }
 
+    // Technischen API-Benutzer als angemeldeten Benutzer setzen (Änderungsprotokoll, Rechteprüfung).
+    // Schreibende Anfragen sind ohne konfigurierten API-Benutzer gesperrt; lesende laufen dann als Gast.
+    $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $apiUserUuid = trim((string) ($plg_wpusersync_api_user_uuid ?? ''));
+    if ($apiUserUuid !== '' || $requestMethod !== 'GET') {
+        ApiUser::activate($apiUserUuid);
+    }
+
     $payload = $rawBody !== '' ? json_decode($rawBody, true) : array();
     if (!is_array($payload)) {
         $payload = array();
@@ -78,6 +90,15 @@ try {
         throw new ApiException('Only GET/POST/DELETE methods are allowed.', 'method_not_allowed', 405);
     }
 
+
+    // Mitgliedsart-Wechsel über das Plugin adm-history (wird nur bei Bedarf geladen)
+    $membershipTypeService = static function () use ($payload): MembershipTypeService {
+        global $plg_wpusersync_admhistory_dir;
+        return new MembershipTypeService(
+            $payload,
+            (string) ($plg_wpusersync_admhistory_dir ?? dirname(__DIR__, 2) . '/adm-history')
+        );
+    };
 
     $result = null;
     $router = new ApiRouter();
@@ -139,6 +160,14 @@ try {
         $uuid = (string) $router->getPathParam('uuid');
         $id = (int) $router->getPathParam('id');
         $result = $Service->deleteUserArbeitsdienst($uuid, $id);
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/mitgliedsarten')) {
+        $result = $membershipTypeService()->listMembershipTypes();
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedsart')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $membershipTypeService()->getMembershipOptions($uuid);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedsart')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $membershipTypeService()->changeMembershipType($uuid);
     } else {
         throw new ApiException('Endpoint not found.', 'not_found', 404, array('path' => $router->getPath(), 'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'));
     }

@@ -77,7 +77,7 @@ final class WpUserSyncPlugin
         $html.= '<thead><tr><th>Variable</th><th>Wert</th></tr></thead>';
         $html.= '<tbody>';
 
-        global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_secret, $plg_wpusersync_nonce_max_age;
+        global $plg_wpusersync_enabled, $plg_wpusersync_require_https, $plg_wpusersync_assign_default_roles, $plg_wpusersync_api_secret, $plg_wpusersync_nonce_max_age, $plg_wpusersync_api_user_uuid, $plg_wpusersync_admhistory_dir;
 
         $parameters = array(
             'plg_wpusersync_enabled' => $plg_wpusersync_enabled,
@@ -85,6 +85,9 @@ final class WpUserSyncPlugin
             'plg_wpusersync_assign_default_roles' => $plg_wpusersync_assign_default_roles,
             'plg_wpusersync_api_secret' => empty($plg_wpusersync_api_secret) ? 'nicht gesetzt' : 'gesetzt',
             'plg_wpusersync_nonce_max_age' => $plg_wpusersync_nonce_max_age,
+            'plg_wpusersync_api_user_uuid' => empty($plg_wpusersync_api_user_uuid) ? 'nicht gesetzt (schreibende Anfragen gesperrt)' : $plg_wpusersync_api_user_uuid,
+            'plg_wpusersync_admhistory_dir' => $plg_wpusersync_admhistory_dir ?? 'Standard: adm_plugins/adm-history'
+                . (is_file(dirname(__DIR__, 2) . '/adm-history/autoload.php') ? ' (gefunden)' : ' (nicht gefunden)'),
         );
 
         foreach ($parameters as $key => $value) {
@@ -182,6 +185,11 @@ final class WpUserSyncPlugin
             '$plg_wpusersync_assign_default_roles = true;',
             '$plg_wpusersync_api_secret = \'mein-langes-zufaelliges-shared-secret\';',
             '$plg_wpusersync_nonce_max_age = 300;',
+            '// Admidio-Benutzer, in dessen Namen alle Änderungen aus WordPress laufen (Pflicht für POST/DELETE);',
+            '// für den Mitgliedsart-Wechsel braucht er das Recht, Mitglieder der betroffenen Rollen zuzuordnen',
+            '$plg_wpusersync_api_user_uuid = \'00000000-0000-0000-0000-000000000000\';',
+            '// optional, Standard: adm_plugins/adm-history',
+            '// $plg_wpusersync_admhistory_dir = __DIR__ . \'/../adm_plugins/adm-history\';',
         );
 
         return implode(PHP_EOL, $lines);

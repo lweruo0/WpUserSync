@@ -5,7 +5,9 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 ## Enthalten
 
 - `index.php` – Infoseite mit Konfigurationsstatus
-- `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien und Arbeitsdienste (via `.htaccess`)
+- `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien, Arbeitsdienste und Mitgliedsart-Wechsel (via `.htaccess`)
+- `classes/Service/MembershipTypeService.php` – Mitgliedsart-Wechsel über `AdmHistory\MembershipApi`
+- `classes/Service/ApiUser.php` – setzt den technischen API-Benutzer als angemeldeten Benutzer
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
 - `bootstrap-plugin.php` – lokaler PSR-4-Autoloader
 
@@ -32,7 +34,21 @@ $plg_wpusersync_require_https = true;
 $plg_wpusersync_assign_default_roles = true;
 $plg_wpusersync_api_secret = 'mein-langes-zufaelliges-shared-secret';
 $plg_wpusersync_nonce_max_age = 300;
+// API-Benutzer für alle Änderungen (Pflicht für POST/DELETE, siehe unten)
+$plg_wpusersync_api_user_uuid = '00000000-0000-0000-0000-000000000000';
+// optional, Standard: adm_plugins/adm-history
+// $plg_wpusersync_admhistory_dir = __DIR__ . '/../adm_plugins/adm-history';
 ```
+
+## API-Benutzer
+
+Die API hat keine Admidio-Anmeldung. Nach erfolgreicher Signaturprüfung setzt `api/api.php` deshalb den Benutzer aus `$plg_wpusersync_api_user_uuid` als angemeldeten Benutzer (`$gCurrentUser`). Admidio trägt ihn bei allen Änderungen aus WordPress im Änderungsprotokoll ein.
+
+- Schreibende Anfragen (POST, DELETE) werden ohne gültigen API-Benutzer mit `500` und `code: api_user_not_configured` bzw. `api_user_invalid` abgelehnt.
+- Lesende Anfragen (GET) laufen mit dem API-Benutzer, falls konfiguriert, sonst als Gast.
+- Rechte des API-Benutzers prüft bisher nur der Mitgliedsart-Wechsel (über adm-history). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
+
+Empfehlung: eigenen Admidio-Benutzer (z. B. „WordPress API“) ohne Login-Daten anlegen und ihm eine Rolle mit dem Recht „Rollen zuordnen“ für die betroffenen Rollen geben.
 
 ## API-Authentifizierung
 
@@ -99,6 +115,25 @@ Eine fehlende Allowlist-Datei sperrt Profilfeld-Lese- und Schreibzugriffe standa
 - `GET /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienste für ein Jahr auslesen
 - `POST /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienst erfassen oder aktualisieren
 - `DELETE /core/users/{uuid}/arbeitsdienst/{id}` – Arbeitsdienst löschen
+
+### Mitgliedsart wechseln (über Plugin adm-history)
+
+Voraussetzung: Das Plugin „Mitglieder-Historie“ liegt in `adm_plugins/adm-history` (oder in `$plg_wpusersync_admhistory_dir`). Erlaubte Wechsel, Pflicht- und optionale Beitragsrollen stehen ausschließlich in `adm-history/mitgliedsarten.php` und werden von `AdmHistory\MembershipApi` geprüft. Ein Wechsel gilt immer ab dem 1. Januar, nur für das aktuelle Jahr und das Folgejahr.
+
+Geändert wird im Namen des API-Benutzers (siehe „API-Benutzer“). Für den Wechsel braucht er das Recht, Mitglieder aller Mitgliedsart-, gemeinsamen und Beitragsrollen zuzuordnen.
+
+- `GET /core/mitgliedsarten` – konfigurierte Mitgliedsarten mit Rollen, Pflicht-/optionalen Beitragsrollen und erlaubten Zielen
+- `GET /core/users/{uuid}/mitgliedsart` – je Jahr (aktuell, Folgejahr): Mitgliedsart am 31.12., Zusatzbeiträge und `options` (bisherige Art plus erlaubte Ziele mit ihren optionalen Beitragsrollen) – geeignet, um in WordPress die Auswahl aufzubauen
+- `POST /core/users/{uuid}/mitgliedsart` – Mitgliedsart und Zusatzbeiträge setzen:
+  - `year` (Pflicht): aktuelles Jahr oder Folgejahr
+  - `art` (Pflicht): Kürzel oder Name, z. B. `"A"` oder `"Aktiv"`; `""` = Kündigung
+  - `fee` (optional): genau diese optionalen Beitragsrollen gelten danach im Jahr, `[]` entfernt alle. Fehlt `fee`, bleiben bisherige Zusatzbeiträge, soweit sie zur neuen Mitgliedsart gehören.
+
+```json
+{"year": 2027, "art": "A", "fee": ["Bootsbeitrag"]}
+```
+
+Antwort: `art`, `name`, `fees`, `operations` (Anzahl Datenbankänderungen, `0` = nichts zu tun) und der neue Stand `years` wie beim GET. Fachliche Fehler (nicht erlaubter Wechsel, unpassender Zusatzbeitrag, fehlende Rechte) antworten mit `422` und `code: membership_change_failed`.
 
 Schreibzugriffe verwenden JSON im Request-Body. Der Router unterstützt nur die oben aufgeführten HTTP-Methoden und Routen; nicht aufgeführte Routen antworten mit `404`.
 
