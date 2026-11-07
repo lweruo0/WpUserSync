@@ -171,6 +171,10 @@ try {
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $workHoursService()->write($uuid);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/soll')) {
+        // vor der Route mit {year}, sonst würde "soll" als Jahr gelesen
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $workHoursService()->writeTarget($uuid);
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $workHoursService()->write($uuid, $pathInt('year'));

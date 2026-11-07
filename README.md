@@ -130,6 +130,7 @@ Endpunkte:
 - `POST /core/users/{uuid}/arbeitsdienst` – Eintrag anlegen oder (mit `id`) ändern
 - `POST /core/users/{uuid}/arbeitsdienst/{year}` – wie oben; das Datum muss im Jahr liegen
 - `DELETE /core/users/{uuid}/arbeitsdienst/{id}` – Eintrag löschen
+- `POST /core/users/{uuid}/arbeitsdienst/soll` – Sollstunden setzen (Profilfeld „Sollstunden Arbeitsdienst“), Body `{"target_hours": 10}`; `null` leert das Feld. Antwort wie beim Lesen des aktuellen Jahres mit `action: "target_updated"`. Hinweis: „Sollstunden abgleichen“ in Admidio kann den Wert später wieder nach den Regeln setzen.
 
 Anlegen (Datum, Stunden und Einsatz sind Pflicht; `name` wird wie `activity` akzeptiert):
 

@@ -23,6 +23,7 @@ use Plugins\MembershipFee\classes\Work\WorkHoursApi;
  *   POST   /core/users/{uuid}/arbeitsdienst          – Eintrag anlegen oder (mit "id") ändern
  *   POST   /core/users/{uuid}/arbeitsdienst/{year}   – wie oben, Datum muss im Jahr liegen
  *   DELETE /core/users/{uuid}/arbeitsdienst/{id}     – Eintrag löschen
+ *   POST   /core/users/{uuid}/arbeitsdienst/soll     – Sollstunden (Profilfeld ADTARGET) setzen
  */
 final class WorkHoursService
 {
@@ -84,6 +85,21 @@ final class WorkHoursService
         );
 
         return array('status' => 'success') + $this->call(static fn (): array => WorkHoursApi::write($uuid, $data, $checkDuplicates, $year));
+    }
+
+    /**
+     * POST /core/users/{uuid}/arbeitsdienst/soll
+     *
+     * Body: {"target_hours": 10}  – null oder "" leert das Feld
+     */
+    public function writeTarget(string $uuid): array
+    {
+        if (!array_key_exists('target_hours', $this->payload)) {
+            throw new ApiException('Field "target_hours" is required (number or null).', 'validation_failed', 422);
+        }
+        $hours = $this->payload['target_hours'];
+
+        return array('status' => 'success') + $this->call(static fn (): array => WorkHoursApi::writeTarget($uuid, $hours));
     }
 
     /**
