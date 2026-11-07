@@ -8,7 +8,6 @@ use Admidio\ProfileFields\ValueObjects\ProfileFields;
 use Admidio\Infrastructure\Database;
 
 
-define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
 
 final class UserWriteService
 {
@@ -106,122 +105,6 @@ final class UserWriteService
                 'name' => $name,
                 'value' => $value,
             ],
-        ];
-    }
-
-    /**
-     * POST /core/users/{uuid}/arbeitsdienst/{year} – Set a custom field by name
-     */
-    public function setUserArbeitsdienst(string $uuid, int $year): array
-    {
-        $payload = $this->payload;
-        $userId = $this->assertUUIDExists($uuid);
-
-        $data = $payload['data'] ?? array();
-        $check_dublicates = $payload['check_dublicates'] ?? False;
-
-        if (empty($payload['data'])) {
-            throw new ApiException('Data is required.', 'validation_failed', 422);
-        }
-
-        if ($year === 0) {
-            throw new ApiException('Year is required.', 'validation_failed', 422);
-        }
-
-        // Get or create category for the year
-        $sql = 'SELECT cat_id FROM ' . TBL_CATEGORIES . ' 
-            WHERE cat_name = ? AND cat_type = ? AND cat_org_id = ?';
-        $stmt = $this->db->queryPrepared($sql, [(string) $year, 'ADC', (int) $this->gCurrentOrgId]);
-        $result = $stmt->fetch();
-        $categoryid = $result['cat_id'] ?? null;
-        
-        if (!$categoryid) {
-            $category = new Category($this->db);
-            $category->setValue('cat_name', (string) $year);
-            $category->setValue('cat_type', 'ADC');
-            $category->setValue('cat_org_id', (int) $this->gCurrentOrgId);
-            $category->save();
-            $categoryid = $category->getId();
-        } 
-
-        # TABELLE TBL_USER_ARBEITSDIENST
-        # pad_id, pad_org_id, pad_user_id, pad_date, pad_cat_id, pad_pro_id, pad_name, pad_hours
-
-        $pro_id = $data['pro_id'] ?? Null;
-        $date = $data['date'] ?? date('Y-m-d');
-        $name = $data['name'] ?? 'Arbeitsdienstbezeichung';
-        $hours = $data['hours'] ?? 0;
-        $pad_id = $data['id'] ?? null;
-
-
-        // Get or create category for the year
-        $sql = 'SELECT pad_id FROM ' . TBL_USER_ARBEITSDIENST . ' 
-            WHERE pad_name = ? AND pad_org_id = ? AND pad_user_id = ? AND pad_date = ? AND pad_cat_id = ? AND pad_hours = ?';
-        $stmt = $this->db->queryPrepared($sql, [$name, (int) $this->gCurrentOrgId, $userId, $date, $categoryid, $hours]);
-        $pad_id_found = $stmt->fetch();        
-
-        if (!empty($pad_id)) {
-            // Existenz vorab prüfen, da rowCount() bei unveränderten Zeilen 0 liefern kann.
-            $sql = 'SELECT pad_id FROM ' . TBL_USER_ARBEITSDIENST . '
-                    WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
-            $stmt = $this->db->queryPrepared($sql, [(int) $pad_id, $userId, (int) $this->gCurrentOrgId]);
-            if (!$stmt->fetch()) {
-                throw new ApiException('Arbeitsdienst entry not found.', 'not_found', 404);
-            }
-
-            $sql = 'UPDATE ' . TBL_USER_ARBEITSDIENST . '
-                    SET pad_cat_id = ? , 
-                        pad_pro_id = ? , 
-                        pad_date = ? , 
-                        pad_name = ? , 
-                        pad_hours = ?
-                    WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
-            $stmt = $this->db->queryPrepared($sql, [$categoryid, $pro_id, $date, $name, $hours, (int) $pad_id, $userId, (int) $this->gCurrentOrgId]);
-
-        } elseif (!$check_dublicates || empty($pad_id_found)) {
-            $sql = 'INSERT INTO ' . TBL_USER_ARBEITSDIENST . '
-                    ( pad_org_id, pad_user_id, pad_cat_id, pad_pro_id, pad_date, pad_name, pad_hours)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)';
-            $stmt = $this->db->queryPrepared($sql, [(int) $this->gCurrentOrgId, 
-                                                    $userId,
-                                                    $categoryid,
-                                                    $pro_id, 
-                                                    $date, 
-                                                    $name, 
-                                                    $hours]);
-        } else {
-            throw new ApiException('Duplicate entry for the same date.', 'validation_failed', 422);
-        }
-        return [
-            'status' => 'success',
-            'check_dublicates' => $check_dublicates,
-            'pad_id_found' => $pad_id_found,
-
-            'data' => [
-            ],
-        ];
-    }
-
-    /**
-     * DELETE /core/users/{uuid}/arbeitsdienst/{id} – Delete a custom field by ID
-     */
-    public function deleteUserArbeitsdienst(string $uuid, int $id): array
-    {
-        $userId = $this->assertUUIDExists($uuid);
-
-        if ($id === 0) {
-            throw new ApiException('ID is required.', 'validation_failed', 422);
-        }
-
-        // Delete the record with the given ID
-        $sql = 'DELETE FROM ' . TBL_USER_ARBEITSDIENST . ' WHERE pad_id = ? AND pad_user_id = ? AND pad_org_id = ?';
-        $stmt = $this->db->queryPrepared($sql, [$id, $userId, (int) $this->gCurrentOrgId]);
-        if ($stmt->rowCount() === 0) {
-            throw new ApiException('Arbeitsdienst entry not found.', 'not_found', 404);
-        }
-
-        return [
-            'status' => 'success',
         ];
     }
 

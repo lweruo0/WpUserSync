@@ -7,6 +7,7 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 - `index.php` – Infoseite mit Konfigurationsstatus
 - `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien, Arbeitsdienste und Mitgliedsart-Wechsel (via `.htaccess`)
 - `classes/Service/MembershipTypeService.php` – Mitgliedsart-Wechsel über `AdmHistory\MembershipApi`
+- `classes/Service/WorkHoursService.php` – Arbeitsdienst-Stunden über das Plugin Mitgliedsbeitrag (`WorkHoursApi`)
 - `classes/Service/ApiUser.php` – setzt den technischen API-Benutzer als angemeldeten Benutzer
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
 - `bootstrap-plugin.php` – lokaler PSR-4-Autoloader
@@ -38,6 +39,8 @@ $plg_wpusersync_nonce_max_age = 300;
 $plg_wpusersync_api_user_uuid = '00000000-0000-0000-0000-000000000000';
 // optional, Standard: adm_plugins/adm-history
 // $plg_wpusersync_admhistory_dir = __DIR__ . '/../adm_plugins/adm-history';
+// optional, Standard: Ordner MembershipFee bzw. Mitgliedsbeitrag neben WpUserSync
+// $plg_wpusersync_membershipfee_dir = __DIR__ . '/../adm_plugins/MembershipFee';
 ```
 
 ## API-Benutzer
@@ -46,7 +49,7 @@ Die API hat keine Admidio-Anmeldung. Nach erfolgreicher Signaturprüfung setzt `
 
 - Schreibende Anfragen (POST, DELETE) werden ohne gültigen API-Benutzer mit `500` und `code: api_user_not_configured` bzw. `api_user_invalid` abgelehnt.
 - Lesende Anfragen (GET) laufen mit dem API-Benutzer, falls konfiguriert, sonst als Gast.
-- Rechte des API-Benutzers prüft bisher nur der Mitgliedsart-Wechsel (über adm-history). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
+- Rechte des API-Benutzers prüfen der Mitgliedsart-Wechsel (über adm-history) und der Arbeitsdienst (über das Plugin Mitgliedsbeitrag). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
 
 Empfehlung: eigenen Admidio-Benutzer (z. B. „WordPress API“) ohne Login-Daten anlegen und ihm eine Rolle mit dem Recht „Rollen zuordnen“ für die betroffenen Rollen geben.
 
@@ -111,10 +114,48 @@ Eine fehlende Allowlist-Datei sperrt Profilfeld-Lese- und Schreibzugriffe standa
 - `GET /core/users/{uuid}/memberships/{year}` – Mitgliedschaften für ein Jahr auslesen
 - `POST /core/users/{uuid}/memberships` – Rollenmitgliedschaften zuweisen (mit `{"roles":{"Rollenname":{"start_date":"YYYY-MM-DD","end_date":"YYYY-MM-DD"}}}`)
 - `POST /core/users/{uuid}/mitgliedschaftbfv` – BFV-Mitgliedschaft und Beitragsrollen verwalten
-- `GET /core/users/{uuid}/arbeitsdienst` – Arbeitsdienste auslesen
-- `GET /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienste für ein Jahr auslesen
-- `POST /core/users/{uuid}/arbeitsdienst/{year}` – Arbeitsdienst erfassen oder aktualisieren
-- `DELETE /core/users/{uuid}/arbeitsdienst/{id}` – Arbeitsdienst löschen
+- Arbeitsdienst: siehe eigener Abschnitt unten.
+
+### Arbeitsdienst (über Plugin Mitgliedsbeitrag)
+
+Die Stunden stehen im Plugin Mitgliedsbeitrag (Tabelle `adm_plugin_membershipfee_workhours`, Seite „Arbeitsdienst erfassen“). WpUserSync ruft dessen Schnittstelle `Plugins\MembershipFee\classes\Work\WorkHoursApi` auf; alle Regeln stehen dort. Die frühere Tabelle `adm_user_arbeitsdienst` des alten Plugins „arbeitsdienst“ wird nicht mehr verwendet.
+
+Voraussetzungen:
+- Plugin Mitgliedsbeitrag ab der Version mit `classes/Work/WorkHoursApi.php` in `adm_plugins/MembershipFee` (oder `Mitgliedsbeitrag`, oder `$plg_wpusersync_membershipfee_dir`). Fehlt es, antworten die Endpunkte mit `501` und `code: membershipfee_missing`.
+- Zum Schreiben braucht der API-Benutzer die Zugriffsrolle des Beitragsplugins oder muss den Menüpunkt „Arbeitsdienst erfassen“ sehen dürfen (in der Menüverwaltung unter „Sichtbar für“ eintragen). Sonst `403`, `code: forbidden`.
+
+Endpunkte:
+- `GET /core/users/{uuid}/arbeitsdienst` – alle Jahre mit Einträgen und das aktuelle Jahr
+- `GET /core/users/{uuid}/arbeitsdienst/{year}` – ein Leistungsjahr
+- `POST /core/users/{uuid}/arbeitsdienst` – Eintrag anlegen oder (mit `id`) ändern
+- `POST /core/users/{uuid}/arbeitsdienst/{year}` – wie oben; das Datum muss im Jahr liegen
+- `DELETE /core/users/{uuid}/arbeitsdienst/{id}` – Eintrag löschen
+
+Anlegen (Datum, Stunden und Einsatz sind Pflicht; `name` wird wie `activity` akzeptiert):
+
+```json
+{"data": {"date": "2026-04-18", "hours": 2.5, "activity": "Gewässerputzete", "comment": "Ufer Nord"},
+ "check_duplicates": true}
+```
+
+Ändern (nur die geänderten Felder): `{"data": {"id": 123, "hours": 4}}`
+
+Mit `check_duplicates` (alt: `check_dublicates`) wird ein Eintrag mit gleichem Datum, Einsatz und Stunden nicht doppelt angelegt; die Antwort hat dann `action: "exists"` und den vorhandenen Eintrag. Wiederholtes Senden aus WordPress ist damit unschädlich. Die `id` aus der Antwort sollte WordPress speichern, um später zu ändern oder zu löschen.
+
+Antwort (lesen und schreiben):
+
+```json
+{"status": "success", "action": "created",
+ "entry": {"id": 123, "date": "2026-04-18", "year": 2026, "hours": 2.5, "activity": "Gewässerputzete", "comment": "Ufer Nord", "created_at": "…", "changed_at": null},
+ "user_uuid": "…", "target_hours": 10,
+ "years": [{"year": 2026, "done_hours": 2.5, "missing_hours": 7.5, "locked": false, "entries": [ … ]}]}
+```
+
+- `action` gibt es nur beim Schreiben: `created`, `updated`, `exists`, `deleted`.
+- `target_hours` ist das Profilfeld „Sollstunden Arbeitsdienst“ (ein Wert, nicht je Jahr; `null`, wenn leer). `missing_hours` rechnet wie die Jahresübersicht mit diesem Wert.
+- `locked: true` heißt: Das Jahr ist abgerechnet (Arbeitsdienst exportiert oder eingezogen). Schreiben und Löschen antworten dann mit `409`, `code: year_locked`; Korrekturen nur noch in Admidio.
+- Weitere Fehler: `404 user_not_found`, `404 not_found` (Eintrag gehört nicht zum Mitglied), `422 not_member_in_year` (Mitglied im Leistungsjahr in keiner Rolle), `422 validation_failed`.
+- Beträge (Ersatzbeitrag) gibt die API nicht aus.
 
 ### Mitgliedsart wechseln (über Plugin adm-history)
 

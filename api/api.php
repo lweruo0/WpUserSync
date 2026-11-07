@@ -13,6 +13,7 @@ use WpUserSync\classes\Service\JsonResponder;
 use WpUserSync\classes\Service\MembershipTypeService;
 use WpUserSync\classes\Service\UserReadService;
 use WpUserSync\classes\Service\UserWriteService;
+use WpUserSync\classes\Service\WorkHoursService;
 
 global $plg_wpusersync_enabled;
 global $plg_wpusersync_api_secret;
@@ -20,6 +21,7 @@ global $plg_wpusersync_nonce_max_age;
 global $plg_wpusersync_require_https;
 global $plg_wpusersync_api_user_uuid;
 global $plg_wpusersync_admhistory_dir;
+global $plg_wpusersync_membershipfee_dir;
 
 try {
 
@@ -100,8 +102,23 @@ try {
         );
     };
 
+    // Arbeitsdienst-Stunden über das Plugin Mitgliedsbeitrag (wird nur bei Bedarf geladen)
+    $workHoursService = static function () use ($payload): WorkHoursService {
+        global $plg_wpusersync_membershipfee_dir;
+        return new WorkHoursService($payload, (string) ($plg_wpusersync_membershipfee_dir ?? ''));
+    };
+
     $result = null;
     $router = new ApiRouter();
+
+    // ganzzahliger Pfadparameter (z. B. Jahr, ID); sonst 422
+    $pathInt = static function (string $name) use ($router): int {
+        $value = (string) $router->getPathParam($name);
+        if (!ctype_digit($value)) {
+            throw new ApiException('Path parameter "' . $name . '" must be an integer.', 'validation_failed', 422);
+        }
+        return (int) $value;
+    };
     if ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/categories')) {
         $result = $Service->listCategories();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/categories/{type}')) {
@@ -132,11 +149,10 @@ try {
         $result = $Service->getUserMemberships($uuid, $year);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst')) {
         $uuid = (string) $router->getPathParam('uuid');
-        $result = $Service->getUserArbeitsdienst($uuid);
+        $result = $workHoursService()->read($uuid);
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
         $uuid = (string) $router->getPathParam('uuid');
-        $year = (int) $router->getPathParam('year');
-        $result = $Service->getUserArbeitsdienst($uuid, $year);
+        $result = $workHoursService()->read($uuid, $pathInt('year'));
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedschaftbfv')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $Service->MitgliedschaftBFV($uuid);    
@@ -152,14 +168,15 @@ try {
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/memberships')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $Service->updateMemberships($uuid);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst')) {
+        $uuid = (string) $router->getPathParam('uuid');
+        $result = $workHoursService()->write($uuid);
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{year}')) {
         $uuid = (string) $router->getPathParam('uuid');
-        $year = (int) $router->getPathParam('year');
-        $result = $Service->setUserArbeitsdienst($uuid, $year);
+        $result = $workHoursService()->write($uuid, $pathInt('year'));
     } elseif ($router->match('DELETE', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{id}')) {
         $uuid = (string) $router->getPathParam('uuid');
-        $id = (int) $router->getPathParam('id');
-        $result = $Service->deleteUserArbeitsdienst($uuid, $id);
+        $result = $workHoursService()->delete($uuid, $pathInt('id'));
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/mitgliedsarten')) {
         $result = $membershipTypeService()->listMembershipTypes();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedsart')) {

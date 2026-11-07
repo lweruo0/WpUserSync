@@ -10,7 +10,6 @@ use Admidio\Roles\Entity\Role;
 use Admidio\Roles\Entity\Membership;
 use Admidio\Roles\Entity\RolesRights;
 
-define('TBL_USER_ARBEITSDIENST', 'adm_user_arbeitsdienst');
 
 
 final class UserReadService
@@ -328,66 +327,6 @@ final class UserReadService
             'status' => 'success',
             'user_id' => $userId,
             'data' => $roles,
-        );
-    }
-
-    /**
-     * GET /core/users/{uuid}/arbeitsdienst – Get all roles for user
-     */
-    public function getUserArbeitsdienst(string $uuid, ?int $year=null): array
-    {
-        $userId = $this->assertUUIDExists($uuid);
-        $user = new User($this->db, $this->profileFields, $userId);
-
-        $roles = array();
-        $queryParams = array($userId);
-        $sql = 'SELECT pad_id, pad_user_id, pad_date, pad_name, pad_hours
-                FROM ' . TBL_USER_ARBEITSDIENST . '
-                WHERE pad_user_id = ?';
-        if ($year !== null) {
-            $sql .= ' AND ((pad_date IS NULL OR pad_date <= ?) AND (pad_date IS NULL OR pad_date >= ?))';
-            $queryParams[] = $year . '-12-31';
-            $queryParams[] = $year . '-01-01';
-        }
-
-        $memberStatement = $this->db->queryPrepared($sql, $queryParams);
-      
-        while ($row = $memberStatement->fetch()) {
-            $roles[] = [
-                'pad_id' => (int) $row['pad_id'],
-                'pad_user_id' => (string) $row['pad_user_id'],
-                'pad_name' => (string) $row['pad_name'],
-                'pad_hours' => (string) $row['pad_hours'],
-                'pad_date' => (string) ($row['pad_date'] ?? ''),
-            ];
-        }   
-
-
-        if (function_exists('list_members')) {
-
-            // alle aktiven Mitglieder einlesen
-            $members = list_members($year, 
-                                    array(
-                                        'FIRST_NAME',
-                                        'LAST_NAME',
-                                        'BIRTHDAY',
-                                        'GENDER'), 
-                                    array('Mitglied' => $userId), ' AND mem.mem_usr_id = '.$userId. ' ');
-
-            // Informationen aller Mitglieder zum Arbeitsdienst einslesen
-            $membersworkinfo = list_members_workinfo($members, 
-                                                    $year);
-
-        } else {
-            $membersworkinfo = ' Arbeitsdienstinformationen können nicht eingelesen werden';
-            // Arbeitsdienstinformationen können nicht eingelesen werden, da die Funktionen aus dem Arbeitsdienstplugin nicht verfügbar sind
-        }
-
-        return array(
-            'status' => 'success',
-            'user_id' => $userId,
-            'data' => $roles,
-            'sumworking' => $membersworkinfo
         );
     }
 

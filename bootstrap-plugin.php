@@ -17,9 +17,3 @@ spl_autoload_register(static function (string $class): void {
         require_once $file;
     }
 });
-
-// Load functions from the Arbeitsdienst plugin if available
-$arbeitsDienstFunctions = dirname(__DIR__) . '/arbeitsdienst/system/common_function.php';
-if (is_file($arbeitsDienstFunctions)) {
-    require_once $arbeitsDienstFunctions;
-}
