@@ -5,6 +5,7 @@ require_once __DIR__ . '/../bootstrap-admidio.php';
 require_once __DIR__ . '/../bootstrap-plugin.php';
 
 use WpUserSync\classes\Service\ApiException;
+use WpUserSync\classes\Service\BuchhaltungInvoiceService;
 use WpUserSync\classes\Service\FieldAllowlist;
 use WpUserSync\classes\Service\ApiRouter;
 use WpUserSync\classes\Service\ApiUser;
@@ -22,6 +23,7 @@ global $plg_wpusersync_require_https;
 global $plg_wpusersync_api_user_uuid;
 global $plg_wpusersync_admhistory_dir;
 global $plg_wpusersync_membershipfee_dir;
+global $plg_wpusersync_buchhaltung_dir;
 
 try {
 
@@ -108,7 +110,14 @@ try {
         return new WorkHoursService($payload, (string) ($plg_wpusersync_membershipfee_dir ?? ''));
     };
 
+    // Rechnungen der WordPress-Seite an das Plugin Buchhaltung (wird nur bei Bedarf geladen)
+    $invoiceService = static function () use ($payload): BuchhaltungInvoiceService {
+        global $plg_wpusersync_buchhaltung_dir;
+        return new BuchhaltungInvoiceService($payload, (string) ($plg_wpusersync_buchhaltung_dir ?? ''));
+    };
+
     $result = null;
+    $statusCode = 200;
     $router = new ApiRouter();
 
     // ganzzahliger Pfadparameter (z. B. Jahr, ID); sonst 422
@@ -189,11 +198,15 @@ try {
     } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedsart')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $membershipTypeService()->changeMembershipType($uuid);
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/buchhaltung/rechnungen')) {
+        [$result, $statusCode] = $invoiceService()->receive();
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/buchhaltung/rechnungen/{nummer}')) {
+        $result = $invoiceService()->status((string) $router->getPathParam('nummer'));
     } else {
         throw new ApiException('Endpoint not found.', 'not_found', 404, array('path' => $router->getPath(), 'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET'));
     }
 
-    JsonResponder::send($result);
+    JsonResponder::send($result, $statusCode);
 } catch (ApiException $e) {
     JsonResponder::sendError($e);
 } catch (Throwable $e) {

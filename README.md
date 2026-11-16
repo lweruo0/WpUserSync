@@ -5,9 +5,10 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 ## Enthalten
 
 - `index.php` – Infoseite mit Konfigurationsstatus
-- `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien, Arbeitsdienste und Mitgliedsart-Wechsel (via `.htaccess`)
+- `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien, Arbeitsdienste, Mitgliedsart-Wechsel und Rechnungen an die Buchhaltung (via `.htaccess`)
 - `classes/Service/MembershipTypeService.php` – Mitgliedsart-Wechsel über `AdmHistory\MembershipApi`
 - `classes/Service/WorkHoursService.php` – Arbeitsdienst-Stunden über das Plugin Mitgliedsbeitrag (`WorkHoursApi`)
+- `classes/Service/BuchhaltungInvoiceService.php` – Rechnungen der WordPress-Seite an das Plugin Buchhaltung (`InvoiceApi`)
 - `classes/Service/ApiUser.php` – setzt den technischen API-Benutzer als angemeldeten Benutzer
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
 - `bootstrap-plugin.php` – lokaler PSR-4-Autoloader
@@ -41,6 +42,8 @@ $plg_wpusersync_api_user_uuid = '00000000-0000-0000-0000-000000000000';
 // $plg_wpusersync_admhistory_dir = __DIR__ . '/../adm_plugins/adm-history';
 // optional, Standard: Ordner MembershipFee bzw. Mitgliedsbeitrag neben WpUserSync
 // $plg_wpusersync_membershipfee_dir = __DIR__ . '/../adm_plugins/MembershipFee';
+// optional, Standard: Ordner buchhaltung neben WpUserSync
+// $plg_wpusersync_buchhaltung_dir = __DIR__ . '/../adm_plugins/buchhaltung';
 ```
 
 ## API-Benutzer
@@ -49,7 +52,7 @@ Die API hat keine Admidio-Anmeldung. Nach erfolgreicher Signaturprüfung setzt `
 
 - Schreibende Anfragen (POST, DELETE) werden ohne gültigen API-Benutzer mit `500` und `code: api_user_not_configured` bzw. `api_user_invalid` abgelehnt.
 - Lesende Anfragen (GET) laufen mit dem API-Benutzer, falls konfiguriert, sonst als Gast.
-- Rechte des API-Benutzers prüfen der Mitgliedsart-Wechsel (über adm-history) und der Arbeitsdienst (über das Plugin Mitgliedsbeitrag). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
+- Rechte des API-Benutzers prüfen der Mitgliedsart-Wechsel (über adm-history), der Arbeitsdienst (über das Plugin Mitgliedsbeitrag) und die Rechnungen an die Buchhaltung (Recht „Belege einreichen“, auch beim Lesen). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
 
 Empfehlung: eigenen Admidio-Benutzer (z. B. „WordPress API“) ohne Login-Daten anlegen und ihm eine Rolle mit dem Recht „Rollen zuordnen“ für die betroffenen Rollen geben.
 
@@ -157,6 +160,32 @@ Antwort (lesen und schreiben):
 - `locked: true` heißt: Das Jahr ist abgerechnet (Arbeitsdienst exportiert oder eingezogen). Schreiben und Löschen antworten dann mit `409`, `code: year_locked`; Korrekturen nur noch in Admidio.
 - Weitere Fehler: `404 user_not_found`, `404 not_found` (Eintrag gehört nicht zum Mitglied), `422 not_member_in_year` (Mitglied im Leistungsjahr in keiner Rolle), `422 validation_failed`.
 - Beträge (Ersatzbeitrag) gibt die API nicht aus.
+
+### Rechnungen an die Buchhaltung (über Plugin Buchhaltung)
+
+Die WordPress-Seite sendet jede erzeugte Rechnung, Mahnung und Stornorechnung als PDF; die Buchhaltung legt sie ab, und
+der Kassier hängt sie beim Buchen des Zahlungseingangs als Beleg an. Regeln und Antworten stehen im Plugin Buchhaltung
+(`AdmBuchhaltung\Api\InvoiceApi`, dort KONZEPT_WORDPRESS_RECHNUNGEN.md); diese API reicht nur weiter.
+
+| Methode | Pfad | Zweck |
+|---|---|---|
+| POST | `/adm_plugins/wpusersync/api/v1/buchhaltung/rechnungen` | Rechnung einliefern |
+| GET | `/adm_plugins/wpusersync/api/v1/buchhaltung/rechnungen/{nummer}` | vorhandene Dokumente zu einer Nummer |
+
+```json
+{"nummer": "2026-P-0294", "art": "erlaubnis", "dokument": "rechnung", "datum": "2026-05-03",
+ "name": "Max Muster", "betrag": "45.00", "pdf_base64": "JVBERi0x…", "sha256": "<sha256 des PDF>"}
+```
+
+- `nummer` `JJJJ-P|L|H-0000` bzw. `JJJJ-J-00000`; `dokument` `rechnung` (Standard), `mahnung` oder `storniert`.
+- PDF höchstens 700 KB (die API nimmt höchstens 1 MB je Anfrage an).
+- Antwort `201` neu (`action: created`), `200` schon vorhanden mit gleicher Prüfsumme (`action: exists`, Wiederholen ist
+  gefahrlos), `409 conflict` andere Datei unter Nummer und Dokument, `422 validation_failed` mit `details.errors` je Feld,
+  `403 forbidden` ohne Recht, `501 buchhaltung_missing` ohne Plugin.
+
+Voraussetzungen: Plugin Buchhaltung ab Schema-Version 7 in `adm_plugins/buchhaltung` (oder
+`$plg_wpusersync_buchhaltung_dir`); der API-Benutzer ist in der Buchhaltung unter Stammdaten → Zugriff bei
+**„Belege einreichen“** eingetragen (über eine seiner Rollen).
 
 ### Mitgliedsart wechseln (über Plugin adm-history)
 
