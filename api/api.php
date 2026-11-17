@@ -10,6 +10,7 @@ use WpUserSync\classes\Service\FieldAllowlist;
 use WpUserSync\classes\Service\ApiRouter;
 use WpUserSync\classes\Service\ApiUser;
 use WpUserSync\classes\Service\NonceValidator;
+use WpUserSync\classes\Service\ProfilePhotoService;
 use WpUserSync\classes\Service\JsonResponder;
 use WpUserSync\classes\Service\MembershipTypeService;
 use WpUserSync\classes\Service\UserReadService;
@@ -116,6 +117,12 @@ try {
         return new BuchhaltungInvoiceService($payload, (string) ($plg_wpusersync_buchhaltung_dir ?? ''));
     };
 
+    // Profilfoto in 600 × 770 px (statt der 130 × 170 px der Admidio-Oberfläche)
+    $profilePhotoService = static function () use ($payload): ProfilePhotoService {
+        global $gDb, $gProfileFields;
+        return new ProfilePhotoService($gDb, $gProfileFields, $payload);
+    };
+
     $result = null;
     $statusCode = 200;
     $router = new ApiRouter();
@@ -190,6 +197,12 @@ try {
     } elseif ($router->match('DELETE', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/arbeitsdienst/{id}')) {
         $uuid = (string) $router->getPathParam('uuid');
         $result = $workHoursService()->delete($uuid, $pathInt('id'));
+    } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/photo')) {
+        $result = $profilePhotoService()->read((string) $router->getPathParam('uuid'));
+    } elseif ($router->match('POST', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/photo')) {
+        $result = $profilePhotoService()->write((string) $router->getPathParam('uuid'));
+    } elseif ($router->match('DELETE', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/photo')) {
+        $result = $profilePhotoService()->delete((string) $router->getPathParam('uuid'));
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/mitgliedsarten')) {
         $result = $membershipTypeService()->listMembershipTypes();
     } elseif ($router->match('GET', '/adm_plugins/wpusersync/api/v1/core/users/{uuid}/mitgliedsart')) {

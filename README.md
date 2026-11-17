@@ -8,6 +8,7 @@ Dieses Plugin ist eine klassische `adm_plugins`-Variante für **Admidio 5.0.x** 
 - `api/api.php` – JSON-API für Benutzer, Felder, Rollen, Kategorien, Arbeitsdienste, Mitgliedsart-Wechsel und Rechnungen an die Buchhaltung (via `.htaccess`)
 - `classes/Service/MembershipTypeService.php` – Mitgliedsart-Wechsel über `AdmHistory\MembershipApi`
 - `classes/Service/WorkHoursService.php` – Arbeitsdienst-Stunden über das Plugin Mitgliedsbeitrag (`WorkHoursApi`)
+- `classes/Service/ProfilePhotoService.php` – Profilfoto in 600 × 770 px lesen, setzen und löschen
 - `classes/Service/BuchhaltungInvoiceService.php` – Rechnungen der WordPress-Seite an das Plugin Buchhaltung (`InvoiceApi`)
 - `classes/Service/ApiUser.php` – setzt den technischen API-Benutzer als angemeldeten Benutzer
 - `bootstrap-admidio.php` – Bootstrap für klassische Admidio-Strukturen
@@ -52,7 +53,7 @@ Die API hat keine Admidio-Anmeldung. Nach erfolgreicher Signaturprüfung setzt `
 
 - Schreibende Anfragen (POST, DELETE) werden ohne gültigen API-Benutzer mit `500` und `code: api_user_not_configured` bzw. `api_user_invalid` abgelehnt.
 - Lesende Anfragen (GET) laufen mit dem API-Benutzer, falls konfiguriert, sonst als Gast.
-- Rechte des API-Benutzers prüfen der Mitgliedsart-Wechsel (über adm-history), der Arbeitsdienst (über das Plugin Mitgliedsbeitrag) und die Rechnungen an die Buchhaltung (Recht „Belege einreichen“, auch beim Lesen). Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
+- Rechte des API-Benutzers prüfen der Mitgliedsart-Wechsel (über adm-history), der Arbeitsdienst (über das Plugin Mitgliedsbeitrag) und die Rechnungen an die Buchhaltung (Recht „Belege einreichen“, auch beim Lesen). Das Profilfoto setzen und löschen darf er nur, wenn er das Profil des Mitglieds bearbeiten darf. Die übrigen Endpunkte schreiben weiterhin ohne Rechteprüfung.
 
 Empfehlung: eigenen Admidio-Benutzer (z. B. „WordPress API“) ohne Login-Daten anlegen und ihm eine Rolle mit dem Recht „Rollen zuordnen“ für die betroffenen Rollen geben.
 
@@ -160,6 +161,31 @@ Antwort (lesen und schreiben):
 - `locked: true` heißt: Das Jahr ist abgerechnet (Arbeitsdienst exportiert oder eingezogen). Schreiben und Löschen antworten dann mit `409`, `code: year_locked`; Korrekturen nur noch in Admidio.
 - Weitere Fehler: `404 user_not_found`, `404 not_found` (Eintrag gehört nicht zum Mitglied), `422 not_member_in_year` (Mitglied im Leistungsjahr in keiner Rolle), `422 validation_failed`.
 - Beträge (Ersatzbeitrag) gibt die API nicht aus.
+
+### Profilfoto
+
+Admidio verkleinert Profilfotos beim Hochladen über die Oberfläche fest auf höchstens 130 × 170 px. Über die API
+wird das Foto stattdessen in **600 × 770 px** (Passbildformat 35 × 45) gespeichert, an derselben Stelle wie in
+Admidio (Einstellung „Speicherort der Profilfotos“: Datenbank `usr_photo` oder Datei
+`adm_my_files/user_profile_photos/{usr_id}.jpg`). Admidio zeigt es unverändert an; die Größe auf der Seite legt
+das HTML fest.
+
+- `GET /core/users/{uuid}/photo` – ob ein Foto vorhanden ist
+- `POST /core/users/{uuid}/photo` – Foto setzen
+- `DELETE /core/users/{uuid}/photo` – Foto löschen
+
+```json
+{"photo_base64": "/9j/4AAQ…", "sha256": "<sha256 der Bilddaten, optional>"}
+```
+
+- JPEG oder PNG, höchstens 25 Megapixel; die Anfrage darf höchstens 1 MB groß sein (Base64 eingerechnet),
+  also vorher verkleinern. Das Bild wird mittig auf 600:770 zugeschnitten, auf genau 600 × 770 px gebracht
+  (kleinere werden vergrößert) und als JPEG (Qualität 90) gespeichert.
+- Antwort (alle drei): `{"status": "success", "action": "updated"|"deleted"|"not_found", "user_uuid": "…",
+  "exists": true, "storage": "database"|"folder", "width": 600, "height": 770, "bytes": 81234, "sha256": "…"}`
+  (`action` nur beim Schreiben und Löschen).
+- Fehler: `404 user_not_found`, `422 validation_failed` (kein Bild, falsches Format, zu groß, Prüfsumme passt
+  nicht), `403 forbidden` (API-Benutzer darf das Profil nicht bearbeiten), `413 payload_too_large`.
 
 ### Rechnungen an die Buchhaltung (über Plugin Buchhaltung)
 
